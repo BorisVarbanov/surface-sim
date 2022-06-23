@@ -127,3 +127,18 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Image files
+*.pdf
+*.png
+*.svg
+
+# Datasets
+*.nc
+
+# Jupyter notebooks (should be converted to py files)
+*.ipynb
+
+# VScode settings
+.vscode
+vscode/
