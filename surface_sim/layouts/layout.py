@@ -117,7 +117,7 @@ class Layout:
         return neighors
 
     @classmethod
-    def from_file(cls, filename: str) -> "Layout":
+    def from_yaml(cls, filename: str) -> "Layout":
         """
         from_file Loads the layout class from a .yaml file.
 
@@ -133,16 +133,11 @@ class Layout:
         ValueError
             If the specified file is not a string.
         """
-        if isinstance(filename, str):
-            if not path.exists(filename):
-                raise ValueError("Given path doesn't exist")
-        else:
-            raise ValueError(
-                "Filename must be a string, instead got {}".format(type(filename))
-            )
+        if not path.exists(filename):
+            raise ValueError("Given path doesn't exist")
 
-        with open(filename, "r") as setup_file:
-            layout_setup = yaml.safe_load(setup_file)
+        with open(filename, "r") as file:
+            layout_setup = yaml.safe_load(file)
             return cls(layout_setup)
 
     def param(self, param: str, qubit: str) -> Any:
@@ -205,50 +200,6 @@ class Layout:
                 raise ValueError("Qubit label repeated, ensure labels are unique.")
 
             self._qubit_info[qubit] = qubit_info
-
-    def sub_layout(
-        self,
-        qubits: List[str],
-        *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-    ) -> "Layout":
-        """
-        sub_layout Returns a sublayout involving only the specified qubits.
-
-        Parameters
-        ----------
-        qubits : List[str], list
-            The list of qubit names that should be included in the layout.
-        name: Optional[str], optional
-            The new name of the layout. By default set to None, in which case
-            the name of the current layout is used
-        name: Optional[str], optional
-            The new description of the layout. By default set to None, in which case
-            the description of the current layout is used
-
-        Returns
-        -------
-        Layout
-            The sublayout involing only the specifed qubits.
-        """
-        sub_layout_dict = dict(
-            name=name or self.name, description=description or self.description
-        )
-        layout_qubit_info = []
-
-        for qubit in qubits:
-            qubit_dict = dict(qubit=qubit)
-            qubit_info = deepcopy(self._qubit_info[qubit])
-
-            nbrs = qubit_info["neighbors"]
-            filtered_nbrs = {dir: nbr for dir, nbr in nbrs.items() if nbr in qubits}
-            qubit_info["neighbors"] = filtered_nbrs
-            qubit_dict.update(qubit_info)
-            layout_qubit_info.append(qubit_dict)
-
-        sub_layout_dict["layout"] = layout_qubit_info
-        return Layout(sub_layout_dict)
 
     def plot(
         self,

@@ -10,9 +10,9 @@ anc_qubits:
   z_type: &z_anc ["Z1", "Z2", "Z3", "Z4"]
 
 gate_set:
-  - &h "hadamard"
-  - &cz "cphase"
-  - &meas "measure"
+  - &h "H"
+  - &cz "CZ"
+  - &meas "M"
 
 layers:
   - gates:

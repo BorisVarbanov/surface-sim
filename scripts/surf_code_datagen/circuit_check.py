@@ -16,21 +16,63 @@
 # %%
 import yaml
 import pathlib
-
 from copy import copy
+
+from matplotlib import pyplot as plt
 from stim import Circuit
+
+from surface_sim import Layout, Schedule, get_circuit
+from surface_sim.layouts import surf_code_layout, set_coords
+from surface_sim.schedules.library import parallel_qec_round
 
 # %%
 NOTEBOOK_DIR = pathlib.Path.cwd()
 
 SCHEDULES_DIR = NOTEBOOK_DIR / "schedules"
+LAYOUTS_DIR = NOTEBOOK_DIR / "layouts"
 
 # %%
-with open(SCHEDULES_DIR / "pipelined_qec_round.yaml") as file:
-    schedule = yaml.safe_load(file)
+PLOT_LAYOUT = True
+qec_round_schedule = Schedule.from_yaml(SCHEDULES_DIR / "parallel_qec_round.yaml")
+#layout = surf_code_layout(3)
+layout = Layout.from_yaml(LAYOUTS_DIR / "rot_layout.yaml")
+
+if PLOT_LAYOUT:
+    set_coords(layout)
+    fig, ax = plt.subplots(dpi=100)
+    layout.plot(axis=ax, draw_patches=True, label_qubits=True)
+    plt.tight_layout()
+    plt.show()
 
 # %%
-circ_layers = copy(schedule.get("layers"))
+qec_round_schedule.layers[1]
+
+# %%
+layout.param("freq_group", "D1")
+
+# %%
+parallel_qec_round(layout).layers[1]
+
+# %%
+qec_round_schedule.layers[1]["gates"]
+
+# %%
+list(range(*test))
+
+# %%
+qec_circ = get_circuit(layout, qec_round_schedule)
+
+# %%
+qec_circ
+
+# %%
+layout._qubit_info
+
+# %%
+qec_circ.append("M", [1], 0.1)
+
+# %%
+qec_circ
 
 # %%
 from stim import Circuit
@@ -89,5 +131,10 @@ for layer in circ_layers:
 
 # %%
 circuit
+
+# %%
+yest = "D3"
+
+# %%
 
 # %%
