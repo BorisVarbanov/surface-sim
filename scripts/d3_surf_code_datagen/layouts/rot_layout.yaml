@@ -1,0 +1,176 @@
+name: maxiumus_layout.
+description: Layout file for the 17-qubits "Maxiumus"device used for the distance-3 logical quantum memory experiment.
+
+freq_group_order: ["low", "mid", "high"]
+
+layout:
+  - qubit: D1
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: null
+      north_east: Z1
+      south_west: null
+      south_east: X1
+  - qubit: D2
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: Z1
+      north_east: X2
+      south_west: X1
+      south_east: null
+  - qubit: D3
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: X2
+      north_east: Z2
+      south_west: null
+      south_east: null
+  - qubit: D4
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: high
+    neighbors:
+      north_west: Z3
+      north_east: X3
+      south_west: null
+      south_east: Z1
+  - qubit: D5
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: high
+    neighbors:
+      north_west: X3
+      north_east: Z4
+      south_west: Z1
+      south_east: X2
+  - qubit: D6
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: high
+    neighbors:
+      north_west: Z4
+      north_east: null
+      south_west: X2
+      south_east: Z2
+  - qubit: D7
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: Z3
+      south_east: X3
+  - qubit: D8
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: null
+      north_east: X4
+      south_west: X3
+      south_east: Z4
+  - qubit: D9
+    role: data
+    coords: null
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: X4
+      north_east: null
+      south_west: Z4
+      south_east: null
+  - qubit: X1
+    role: anc
+    coords: null
+    stab_type: "x_type"
+    freq_group: mid
+    neighbors:
+      north_west: D1
+      north_east: D2
+      south_west: null
+      south_east: null
+  - qubit: X2
+    role: anc
+    coords: null
+    stab_type: "x_type"
+    freq_group: mid
+    neighbors:
+      north_west: D5
+      north_east: D6
+      south_west: D2
+      south_east: D3
+  - qubit: X3
+    role: anc
+    coords: null
+    stab_type: "x_type"
+    freq_group: mid
+    neighbors:
+      north_west: D7
+      north_east: D8
+      south_west: D4
+      south_east: D5
+  - qubit: X4
+    role: anc
+    coords: null
+    stab_type: "x_type"
+    freq_group: mid
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: D8
+      south_east: D9
+  - qubit: Z1
+    role: anc
+    coords: null
+    stab_type: "z_type"
+    freq_group: mid
+    neighbors:
+      north_west: D4
+      north_east: D5
+      south_west: D1
+      south_east: D2
+  - qubit: Z2
+    role: anc
+    coords: null
+    stab_type: "z_type"
+    freq_group: mid
+    neighbors:
+      north_west: D6
+      north_east: null
+      south_west: D3
+      south_east: null
+  - qubit: Z3
+    role: anc
+    coords: null
+    stab_type: "z_type"
+    freq_group: mid
+    neighbors:
+      north_west: null
+      north_east: D7
+      south_west: null
+      south_east: D4
+  - qubit: Z4
+    role: anc
+    coords: null
+    stab_type: "z_type"
+    freq_group: mid
+    neighbors:
+      north_west: D8
+      north_east: D9
+      south_west: D5
+      south_east: D6

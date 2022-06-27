@@ -1,0 +1,138 @@
+version: "1"
+name: Aurelius setup from initial device calibration
+dim: 2
+
+setup:
+  - qubit: D1
+    freq: 4900
+    T1: 13973
+    T2: 7181
+    anharmonicity: 0
+    res_excitation: 0
+    gate_error: 0.0011
+    assignment_error: 0.0281
+  - qubit: D2
+    freq: 4900
+    T1: 14460
+    T2: 12197
+    res_excitation: 0
+    gate_error: 0.0016
+    assignment_error: 0.1182
+  - qubit: D3
+    freq: 4900
+    T1: 10244
+    T2: 15769
+    res_excitation: 0
+    gate_error: 0.0061
+    assignment_error: 0.0275
+  - qubit: D5
+    freq: 6700
+    T1: 11508
+    T2: 10684
+    res_excitation: 0
+    gate_error: 0.0009
+    assignment_error: 0.0135
+  - qubit: D6
+    freq: 6700
+    T1: 5858
+    T2: 9737
+    res_excitation: 0
+    gate_error: 0.0033
+    assignment_error: 0.0216
+  - qubit: D8
+    freq: 4900
+    T1: 11273
+    T2: 14264
+    res_excitation: 0
+    gate_error: 0.0024
+    assignment_error: 0.0502
+  - qubit: D9
+    freq: 4900
+    T1: 18161
+    T2: 14397
+    res_excitation: 0
+    gate_error: 0.0041
+    assignment_error: 0.0563
+  - qubit: X1
+    freq: 6000
+    T1: 9902
+    T2: 6587
+    res_excitation: 0
+    gate_error: 0.0027
+    assignment_error: 0.031
+    post_meas_error: 0.0906
+  - qubit: X2
+    freq: 6000
+    T1: 12423
+    T2: 13410
+    res_excitation: 0
+    gate_error: 0.0050
+    assignment_error: 0.0156
+    post_meas_error: 0.0914
+  - qubit: X3
+    freq: 6000
+    T1: 8717
+    T2: 11483
+    res_excitation: 0
+    gate_error: 0.0032
+    assignment_error: 0.0182
+    post_meas_error: 0.0601
+  - qubit: X4
+    freq: 6000
+    T1: 7058
+    T2: 11125
+    res_excitation: 0
+    gate_error: 0.0033
+    assignment_error: 0.0302
+    post_meas_error: 0.0349
+  - qubit: Z1
+    freq: 6000
+    T1: 5105
+    T2: 4471
+    res_excitation: 0
+    gate_error: 0.0093
+    assignment_error: 0.0198
+    post_meas_error: 0.0533
+  - qubit: Z2
+    freq: 6000
+    T1: 10612
+    T2: 18038
+    res_excitation: 0
+    gate_error: 0.0022
+    assignment_error: 0.0381
+    post_meas_error: 0.0383
+
+  - qubits: [D1, X1]
+    gate_error: 0.0179
+  - qubits: [D2, X1]
+    gate_error: 0.0216
+
+  - qubits: [D2, X2]
+    gate_error: 0.0259
+  - qubits: [D3, X2]
+    gate_error: 0.0143
+
+  - qubits: [D3, Z2]
+    gate_error: 0.0124
+  - qubits: [Z2, D6]
+    gate_error: 0.0334
+
+  - qubits: [D1, Z1]
+    gate_error: 0.0270
+  - qubits: [Z1, D5]
+    gate_error: 0.0256
+
+  - qubits: [X3, D5]
+    gate_error: 0.0340
+  - qubits: [D8, X3]
+    gate_error: 0.0149
+
+  - qubits: [D8, X4]
+    gate_error: 0.0180
+  - qubits: [D9, X4]
+    gate_error: 0.0290
+
+  - time_rotate_y: 20
+    time_rotate_x: 20
+    time_cphase: 40
+    time_measure: 800
