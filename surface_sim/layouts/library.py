@@ -2,7 +2,6 @@ from itertools import count, product
 from typing import Dict
 
 from .layout import Layout
-from .util import set_coords
 
 
 def surf_code_layout(distance: int) -> Layout:
@@ -25,8 +24,9 @@ def surf_code_layout(distance: int) -> Layout:
         )
         qubit_info_dict[qubit] = qubit_info
 
-    for anc_ind in range(1, int(0.5 * (distance**2 - 1)) + 1):
-        for stab_type in ["z_type", "x_type"]:
+    num_anc = int(0.5 * (distance**2 - 1))
+    for stab_type in ["x_type", "z_type"]:
+        for anc_ind in range(1, num_anc + 1):
             qubit = f"Z{anc_ind}" if stab_type == "z_type" else f"X{anc_ind}"
             qubit_info = dict(
                 qubit=qubit,

@@ -106,10 +106,10 @@ layers:
   - gates:
       - label: *meas
         num_qubits: 1
-        qubits: *z_anc
+        qubits: *x_anc
         time: 600
 
       - label: *meas
         num_qubits: 1
-        qubits: *x_anc
+        qubits: *z_anc
         time: 600
