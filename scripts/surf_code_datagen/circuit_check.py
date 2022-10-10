@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.13.8
+#       jupytext_version: 1.14.1
 #   kernelspec:
 #     display_name: surface-sim-kernel
 #     language: python
@@ -97,9 +97,24 @@ PLOT_LAYOUT = True
 if PLOT_LAYOUT:
     set_coords(LAYOUT)
     fig, ax = plt.subplots(dpi=100)
-    LAYOUT.plot(axis=ax, draw_patches=True, label_qubits=True)
+    LAYOUT.plot(axis=ax, draw_patches=True, label_qubits=False)
     plt.tight_layout()
     plt.show()
+
+# %%
+fig = plt.figure()
+
+# add axes
+ax = fig.add_subplot(111,projection='3d')
+
+n_x, n_y = 10, 10
+xx, yy = np.meshgrid(range(n_x), range(n_y))
+for qec_round in range(5):
+    z =  np.full((n_x, n_y), qec_round, dtype=int)
+    # plot the plane
+    ax.plot_surface(xx, yy, z, alpha=0.25)
+ax.set_zlim(0)
+plt.show()
 
 # %% [markdown]
 # # Generate the training data
@@ -138,6 +153,36 @@ for log_state in LOG_STATES:
     log_init = log_initialization(LAYOUT, log_state=log_state, basis=LOG_BASIS)
     experiment = log_init + (qec_round * NUM_ROUNDS) + log_meas
     experiments.append(experiment)
+
+# %%
+circuit = stim.Circuit.generated(
+    "repetition_code:memory",
+    rounds=9,
+    distance=3,
+    before_round_data_depolarization=0.15)
+
+# %%
+circuit
+
+# %%
+em = circuit.detector_error_model(decompose_errors=True)
+
+# %%
+em.num_observables
+
+# %%
+em.get_detector_coordinates()
+
+# %%
+
+# %%
+err = em[1]
+
+# %%
+err.targets_copy()[0].val
+
+# %%
+bl.body_copy()[0].targets_copy()[0].val
 
 # %% [markdown]
 # run the simulation
@@ -224,9 +269,6 @@ def get_final_defects(
 
 
 # %%
-PAR_MAT
-
-# %%
 syndromes = get_syndromes(dataset.anc_meas)
 
 z_stab_frame = (dataset.init_state @ PAR_MAT) % 2 #define the inital syndrome frame based on the initialized state
@@ -259,3 +301,38 @@ defects = get_defects(syndromes, initial_frame)
 
 # %%
 example_syndromes = get_syndromes(example_anc_meas)
+
+# %%
+
+# %%
+circuit
+
+# %%
+from stim import TableauSimulator
+
+# %%
+t_sim = TableauSimulator()
+
+# %%
+t_sim.do_circuit(qec_round)
+
+# %%
+t_sim.current_measurement_record()
+
+# %%
+for gate in circuit:
+    print(type(gate))
+    t_sim.do_circuit(gate)
+
+# %%
+qec_round.flattened_operations()[1]
+
+# %%
+for g in qec_round.flattened():
+    print(type(g))
+
+# %%
+t_sim = TableauSimulator()
+t_sim.num_qubits
+
+# %%
