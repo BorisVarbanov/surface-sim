@@ -2,7 +2,7 @@
 __version__ = "0.1.0"
 
 from . import layouts, schedules
-from .circuits import get_circuit, Circuit, Gate
+from .circuits import Circuit, get_circuit
 from .layouts import Layout
 from .schedules import Schedule
 from .setup import Setup
@@ -15,5 +15,4 @@ __all__ = [
     "Layout",
     "Setup",
     "Circuit",
-    "Gate",
 ]

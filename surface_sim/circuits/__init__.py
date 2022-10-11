@@ -1,5 +1,5 @@
-from . import library
+from . import gates, library
+from .circuit import Circuit
 from .circuit_util import get_circuit
-from .circuit import Circuit, Gate
 
-__all__ = ["get_circuit", "library", "Circuit", "Gate"]
+__all__ = ["gates", "get_circuit", "library", "Circuit"]

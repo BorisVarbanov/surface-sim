@@ -1,13 +1,14 @@
-from typing import Iterable, List, Optional
 import re
-from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.axes import Axes
 from copy import deepcopy
-from matplotlib.patches import Rectangle, Ellipse, Arc
+from typing import Iterable, List, Optional
 
-from ..layouts import Layout
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
+from matplotlib.patches import Arc, Ellipse, Rectangle
+
 from ..circuits import Circuit, Gate
+from ..layouts import Layout
 
 
 def plot(

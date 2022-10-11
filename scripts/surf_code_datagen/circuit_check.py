@@ -155,6 +155,9 @@ for log_state in LOG_STATES:
     experiments.append(experiment)
 
 # %%
+qec_round
+
+# %%
 circuit = stim.Circuit.generated(
     "repetition_code:memory",
     rounds=9,
@@ -174,15 +177,10 @@ em.num_observables
 em.get_detector_coordinates()
 
 # %%
-
-# %%
 err = em[1]
 
 # %%
 err.targets_copy()[0].val
-
-# %%
-bl.body_copy()[0].targets_copy()[0].val
 
 # %% [markdown]
 # run the simulation
@@ -309,20 +307,40 @@ circuit
 
 # %%
 from stim import TableauSimulator
+import stim
 
 # %%
 t_sim = TableauSimulator()
+t_sim.set_num_qubits(2)
+
 
 # %%
-t_sim.do_circuit(qec_round)
+def hadamard(qubit):
+    if not state.is_leaked(qubit):
+        state.h(state.index(qubit))
+    
+
+
+# %%
+getattr(t_sim, "x")(0)
+
+# %%
+t_sim.state_vector()
+
+# %%
+# %%timeit
+t_sim.x(0)
+
+# %%
+t_sim.do(qec_round)
 
 # %%
 t_sim.current_measurement_record()
 
 # %%
 for gate in circuit:
-    print(type(gate))
-    t_sim.do_circuit(gate)
+    print(gate)
+    t_sim.do(gate)
 
 # %%
 qec_round.flattened_operations()[1]
@@ -334,5 +352,153 @@ for g in qec_round.flattened():
 # %%
 t_sim = TableauSimulator()
 t_sim.num_qubits
+
+# %%
+t_sim.h(0, 1, 2)
+
+# %%
+t_sim.cx(0, 2, 1, 3)
+
+# %%
+t_sim.measure(0)
+
+# %%
+
+# %%
+from surface_sim.states import State
+from surface_sim.circuits import gates
+
+# %%
+qubits = ("X1", "X2")
+state = State(qubits)
+
+# %%
+h = gates.Hadamard("X1", 0)
+
+# %%
+h.apply_to(state)
+
+# %%
+state.tableau.state_vector()
+
+# %%
+s = {"A", "B", "C", "D"}
+
+# %%
+s -= set(("A", "B"))
+
+# %%
+s
+
+# %%
+s.intersection(("A", "B"))
+
+
+# %%
+def hadamard(state: State, qubit: str) -> None:
+    if qubit not in state.leaked_qubits:
+        state.tableau.h(state.index(qubit))
+
+
+# %%
+from functools import partial
+
+# %%
+partial(hadamard, qubit="X1")
+
+# %%
+from functools import wraps
+
+def operation(qubit):    
+    def function_logger(func):    
+        def wrapper(*args, **kwargs):
+            date_time = datetime.now().strftime("%y-%m-%d %H:%M:%S")
+            with open(filename, "a") as logfile:
+                logfile.write(f'{f.__name__}: {args}, {date_time}\n')
+            return f(*args, **kwargs)
+        return wrapper
+    return function_logger
+
+def logged(func):
+    @wraps(func)
+    def with_logging(*args, **kwargs):
+        print(func.__name__ + " was called")
+        return func(*args, **kwargs)
+    return with_logging
+
+@logged
+def f(x):
+    return x + x * x
+
+
+# %%
+from functools import update_wrapper
+
+class Operation:
+    def __init__(self, func):
+        update_wrapper(self, func)
+        self.func = func
+        self.num_calls = 0
+
+    def __call__(self, *args, **kwargs):
+        self.num_calls += 1
+        print(f"Call {self.num_calls} of {self.func.__name__!r}")
+        return self.func(*args, **kwargs)
+
+@Operation
+def hadamard_op(state: State, qubit: str) -> None:
+    if qubit not in state.leaked_qubits:
+        state.tableau.h(state.index(qubit))
+
+
+# %%
+class Operation(object):
+    def __init__(self, ops, *qubits):
+        self.ops = ops
+        self.qubits = qubits
+        
+    def __call__(self, state, **pararams):
+        for op in self.ops:
+            op(state, qubits, **kwargs)
+
+
+# %%
+Operation(hadamard_op, "X2")
+
+# %%
+from surface_sim.circuits.circuit import Gate
+def hadamard_op(state: State, qubit: str) -> None:
+    if qubit not in state.leaked_qubits:
+        state.tableau.h(state.index(qubit))
+        
+def gate_decorator(func):
+    label = func.__name__
+    def wrapper(qubits, time):
+        print(qubits)
+        #op = Operation(func, qubits) 
+        gate =  Gate(
+            qubits,
+            time,
+            label=label  
+        )
+        return gate
+
+    wrapper.__name__ = label
+    return wrapper
+
+@gate_decorator
+def hadamard(qubit: str) -> None:
+    return hadamard_op(qubit)
+
+
+# %%
+hadamard("X2", time=1)
+
+# %%
+had_op = hadamard
+ops = (had_op, )
+
+# %%
+ops[0](state)
 
 # %%

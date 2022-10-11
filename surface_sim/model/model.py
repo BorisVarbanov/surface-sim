@@ -1,13 +1,12 @@
-from typing import Optional, Union, Sequence
-from ..setup import Setup
+from typing import Sequence, Union
 
 from ..circuits import Gate
+from ..setup import Setup
 
 
 class Model:
-    def __init__(self, setup: Setup, include_noise: Optional[bool] = False) -> None:
-        self._setup = setup
-        self._incl_noise = include_noise
+    def __init__(self, setup: Setup) -> None:
+        self.setup = setup
 
     def hadamard(self, qubits: Union[str, Sequence[str]], time: int) -> Gate:
         h_gate = Gate(
