@@ -332,24 +332,6 @@ t_sim.state_vector()
 t_sim.x(0)
 
 # %%
-t_sim.do(qec_round)
-
-# %%
-t_sim.current_measurement_record()
-
-# %%
-for gate in circuit:
-    print(gate)
-    t_sim.do(gate)
-
-# %%
-qec_round.flattened_operations()[1]
-
-# %%
-for g in qec_round.flattened():
-    print(type(g))
-
-# %%
 t_sim = TableauSimulator()
 t_sim.num_qubits
 
@@ -463,9 +445,6 @@ class Operation(object):
 
 
 # %%
-Operation(hadamard_op, "X2")
-
-# %%
 from surface_sim.circuits.circuit import Gate
 def hadamard_op(state: State, qubit: str) -> None:
     if qubit not in state.leaked_qubits:
@@ -502,3 +481,35 @@ ops = (had_op, )
 ops[0](state)
 
 # %%
+from collections import namedtuple
+
+# %%
+Operation = namedtuple('Operation', ["func", "qubits"])
+
+
+# %%
+def hadamard_op(state: State, qubit: str) -> None:
+    ind = state.index(qubit)
+    if ind not in state.leaked_inds:
+        state.tableau.h(ind)
+
+
+# %%
+op = Operation(hadamard_op, "X2")
+
+# %%
+op.func(state, op.qubits)
+
+# %%
+from operator import itemgetter
+
+# %%
+qubits = ("X1", "X2", "X1", "X2", "X1", "X2")
+
+# %%
+# %%timeit
+tuple(itemgetter(*qubits)(state.inds))
+
+# %%
+# %%timeit
+(state.inds[qubit] for qubit in qubits)

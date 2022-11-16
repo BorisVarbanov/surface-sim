@@ -1,4 +1,6 @@
 from ..states import State
+import inspect
+from typing import Any, Tuple, Callable
 
 
 def hadamard(state: State, ind: int) -> None:
