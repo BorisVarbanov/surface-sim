@@ -17,14 +17,16 @@
 import pathlib
 
 import numpy as np
+import stim
 import xarray as xr
-
 from matplotlib import pyplot as plt
 
-import stim
-
-from surface_sim.layouts import Layout, surf_code_layout, set_coords
-from surface_sim.circuits.library import sequential_qec_round, log_measurement, log_initialization
+from surface_sim.circuits.library import (
+    log_initialization,
+    log_measurement,
+    sequential_qec_round,
+)
+from surface_sim.layouts import Layout, set_coords, surf_code_layout
 
 
 # %%
@@ -45,29 +47,31 @@ def get_parity_mat(layout: Layout, stab_type: str) -> xr.DataArray:
         data=par_mat,
         dims=["anc_qubit", "data_qubit"],
         coords=dict(
-            anc_qubit=anc_qubits, 
+            anc_qubit=anc_qubits,
             data_qubit=data_qubits,
         ),
         attrs=dict(stab_type=stab_type),
     )
     return data_arr
 
+
 def get_init_state(layout: Layout, log_state: int) -> xr.DataArray:
     data_qubits = layout.get_qubits(role="data")
     state = np.repeat(log_state, len(data_qubits))
-    
+
     init_state = xr.DataArray(
-        data = state,
+        data=state,
         dims=["data_qubit"],
         coords=dict(data_qubit=data_qubits),
-        attrs=dict(log_state=log_state)
+        attrs=dict(log_state=log_state),
     )
     return init_state
+
 
 def get_noise_channel(layout, label, channel_qubits, prob):
     noise = stim.Circuit()
     qubits = layout.get_qubits()
-    
+
     inds = [qubits.index(q) for q in channel_qubits]
     noise.append(label, inds, prob)
     return noise
@@ -101,20 +105,6 @@ if PLOT_LAYOUT:
     plt.tight_layout()
     plt.show()
 
-# %%
-fig = plt.figure()
-
-# add axes
-ax = fig.add_subplot(111,projection='3d')
-
-n_x, n_y = 10, 10
-xx, yy = np.meshgrid(range(n_x), range(n_y))
-for qec_round in range(5):
-    z =  np.full((n_x, n_y), qec_round, dtype=int)
-    # plot the plane
-    ax.plot_surface(xx, yy, z, alpha=0.25)
-ax.set_zlim(0)
-plt.show()
 
 # %% [markdown]
 # # Generate the training data
@@ -126,8 +116,8 @@ plt.show()
 LOG_BASIS = "z_basis"
 LOG_STATES = [0, 1]
 
-DATA_QUBITS = LAYOUT.get_qubits(role='data')
-ANC_QUBITS = LAYOUT.get_qubits(role='anc')
+DATA_QUBITS = LAYOUT.get_qubits(role="data")
+ANC_QUBITS = LAYOUT.get_qubits(role="anc")
 NUM_ANC = len(ANC_QUBITS)
 SAVE_DATA = True
 
@@ -135,7 +125,7 @@ NUM_ROUNDS = 20
 QEC_ROUNDS = list(range(1, NUM_ROUNDS + 1))
 
 NUM_SHOTS = 20000
-SHOTS = list(range(1, NUM_SHOTS+1))
+SHOTS = list(range(1, NUM_SHOTS + 1))
 BATCH_SIZE = None
 ERROR_PROB = 0.001
 
@@ -145,7 +135,9 @@ ERROR_PROB = 0.001
 # %%
 experiments = []
 
-incoming_noise = get_noise_channel(LAYOUT, "DEPOLARIZE1", DATA_QUBITS + ANC_QUBITS, ERROR_PROB) 
+incoming_noise = get_noise_channel(
+    LAYOUT, "DEPOLARIZE1", DATA_QUBITS + ANC_QUBITS, ERROR_PROB
+)
 qec_round = incoming_noise + sequential_qec_round(LAYOUT, reset=False)
 log_meas = incoming_noise + log_measurement(LAYOUT, basis=LOG_BASIS, reset=False)
 
@@ -162,7 +154,8 @@ circuit = stim.Circuit.generated(
     "repetition_code:memory",
     rounds=9,
     distance=3,
-    before_round_data_depolarization=0.15)
+    before_round_data_depolarization=0.15,
+)
 
 # %%
 circuit
@@ -187,11 +180,17 @@ err.targets_copy()[0].val
 
 # %%
 for log_state, experiment in zip(LOG_STATES, experiments):
-    sampler = experiment.compile_sampler() #should be seeded.
+    sampler = experiment.compile_sampler()  # should be seeded.
     outcome_vec = sampler.sample(NUM_SHOTS)
 
     meas_outcomes = outcome_vec.reshape(NUM_SHOTS, -1)
-    anc_outcomes, data_outcomes = np.split(meas_outcomes, [NUM_ROUNDS * NUM_ANC, ], axis=1)
+    anc_outcomes, data_outcomes = np.split(
+        meas_outcomes,
+        [
+            NUM_ROUNDS * NUM_ANC,
+        ],
+        axis=1,
+    )
     anc_outcomes = anc_outcomes.reshape(NUM_SHOTS, NUM_ROUNDS, NUM_ANC)
 
     anc_meas = xr.DataArray(
@@ -201,29 +200,25 @@ for log_state, experiment in zip(LOG_STATES, experiments):
             shot=SHOTS,
             qec_round=QEC_ROUNDS,
             anc_qubit=ANC_QUBITS,
-        )
+        ),
     )
 
     data_meas = xr.DataArray(
         data=data_outcomes,
-        dims=['shot', 'data_qubit'],
+        dims=["shot", "data_qubit"],
         coords=dict(
             shot=SHOTS,
             data_qubit=DATA_QUBITS,
         ),
     )
-    
+
     init_state = get_init_state(LAYOUT, log_state)
 
     dataset = xr.Dataset(
-        data_vars=dict(
-            anc_meas=anc_meas, 
-            data_meas=data_meas, 
-            init_state=init_state
-        ), 
+        data_vars=dict(anc_meas=anc_meas, data_meas=data_meas, init_state=init_state),
         attrs=dict(
             description="Distance-3 surface code experimental data.",
-        )
+        ),
     )
 
     if SAVE_DATA:
@@ -246,22 +241,24 @@ def get_syndromes(anc_meas: xr.DataArray) -> xr.DataArray:
 def get_defects(
     syndromes: xr.DataArray, frame: Optional[xr.DataArray] = None
 ) -> xr.DataArray:
-    shifted_syn = syndromes.shift(qec_round=1, fill_value=0)    
-    
+    shifted_syn = syndromes.shift(qec_round=1, fill_value=0)
+
     if frame is not None:
-        shifted_syn[dict(qec_round = 0)] = frame
-    
+        shifted_syn[dict(qec_round=0)] = frame
+
     defects = syndromes ^ shifted_syn
     defects.name = "defects"
     return defects
 
+
 def get_final_defects(
-    syndromes: xr.DataArray, proj_syndrome: xr.DataArray,
+    syndromes: xr.DataArray,
+    proj_syndrome: xr.DataArray,
 ) -> xr.DataArray:
-    last_syndrome = syndromes.isel(qec_round = -1)
+    last_syndrome = syndromes.isel(qec_round=-1)
     proj_anc = proj_syndrome.anc_qubit
-    
-    final_defects = last_syndrome.sel(anc_qubit = proj_anc) ^ proj_syndromes
+
+    final_defects = last_syndrome.sel(anc_qubit=proj_anc) ^ proj_syndromes
     final_defects.name = "final_defects"
     return final_defects
 
@@ -269,8 +266,12 @@ def get_final_defects(
 # %%
 syndromes = get_syndromes(dataset.anc_meas)
 
-z_stab_frame = (dataset.init_state @ PAR_MAT) % 2 #define the inital syndrome frame based on the initialized state
-x_stab_frame = syndromes.sel(qec_round=1, anc_qubit = LAYOUT.get_qubits(role='anc', stab_type="x_type"))
+z_stab_frame = (
+    dataset.init_state @ PAR_MAT
+) % 2  # define the inital syndrome frame based on the initialized state
+x_stab_frame = syndromes.sel(
+    qec_round=1, anc_qubit=LAYOUT.get_qubits(role="anc", stab_type="x_type")
+)
 pauli_frame = xr.concat([x_stab_frame, z_stab_frame], dim="anc_qubit")
 
 proj_syndromes = (dataset.data_meas @ PAR_MAT) % 2
@@ -293,7 +294,7 @@ example_anc_meas = dataset.anc_meas.sel(shot=range(1, 10001))
 
 # %%
 meas_syndromes = get_syndromes(dataset.anc_meas)
-syndromes = xr.concat([meas_syndromes, proj_syndromes], dim='qec_round')
+syndromes = xr.concat([meas_syndromes, proj_syndromes], dim="qec_round")
 
 defects = get_defects(syndromes, initial_frame)
 
@@ -305,9 +306,10 @@ example_syndromes = get_syndromes(example_anc_meas)
 # %%
 circuit
 
+import stim
+
 # %%
 from stim import TableauSimulator
-import stim
 
 # %%
 t_sim = TableauSimulator()
@@ -318,7 +320,6 @@ t_sim.set_num_qubits(2)
 def hadamard(qubit):
     if not state.is_leaked(qubit):
         state.h(state.index(qubit))
-    
 
 
 # %%
@@ -346,9 +347,10 @@ t_sim.measure(0)
 
 # %%
 
+from surface_sim.circuits import gates
+
 # %%
 from surface_sim.states import State
-from surface_sim.circuits import gates
 
 # %%
 qubits = ("X1", "X2")
@@ -391,22 +393,28 @@ partial(hadamard, qubit="X1")
 # %%
 from functools import wraps
 
-def operation(qubit):    
-    def function_logger(func):    
+
+def operation(qubit):
+    def function_logger(func):
         def wrapper(*args, **kwargs):
             date_time = datetime.now().strftime("%y-%m-%d %H:%M:%S")
             with open(filename, "a") as logfile:
-                logfile.write(f'{f.__name__}: {args}, {date_time}\n')
+                logfile.write(f"{f.__name__}: {args}, {date_time}\n")
             return f(*args, **kwargs)
+
         return wrapper
+
     return function_logger
+
 
 def logged(func):
     @wraps(func)
     def with_logging(*args, **kwargs):
         print(func.__name__ + " was called")
         return func(*args, **kwargs)
+
     return with_logging
+
 
 @logged
 def f(x):
@@ -415,6 +423,7 @@ def f(x):
 
 # %%
 from functools import update_wrapper
+
 
 class Operation:
     def __init__(self, func):
@@ -427,6 +436,7 @@ class Operation:
         print(f"Call {self.num_calls} of {self.func.__name__!r}")
         return self.func(*args, **kwargs)
 
+
 @Operation
 def hadamard_op(state: State, qubit: str) -> None:
     if qubit not in state.leaked_qubits:
@@ -438,7 +448,7 @@ class Operation(object):
     def __init__(self, ops, *qubits):
         self.ops = ops
         self.qubits = qubits
-        
+
     def __call__(self, state, **pararams):
         for op in self.ops:
             op(state, qubits, **kwargs)
@@ -446,24 +456,25 @@ class Operation(object):
 
 # %%
 from surface_sim.circuits.circuit import Gate
+
+
 def hadamard_op(state: State, qubit: str) -> None:
     if qubit not in state.leaked_qubits:
         state.tableau.h(state.index(qubit))
-        
+
+
 def gate_decorator(func):
     label = func.__name__
+
     def wrapper(qubits, time):
         print(qubits)
-        #op = Operation(func, qubits) 
-        gate =  Gate(
-            qubits,
-            time,
-            label=label  
-        )
+        # op = Operation(func, qubits)
+        gate = Gate(qubits, time, label=label)
         return gate
 
     wrapper.__name__ = label
     return wrapper
+
 
 @gate_decorator
 def hadamard(qubit: str) -> None:
@@ -475,7 +486,7 @@ hadamard("X2", time=1)
 
 # %%
 had_op = hadamard
-ops = (had_op, )
+ops = (had_op,)
 
 # %%
 ops[0](state)
@@ -484,7 +495,7 @@ ops[0](state)
 from collections import namedtuple
 
 # %%
-Operation = namedtuple('Operation', ["func", "qubits"])
+Operation = namedtuple("Operation", ["func", "qubits"])
 
 
 # %%
