@@ -14,7 +14,8 @@ RE_FILTER = re.compile("([a-zA-Z]+)([0-9]+)")
 
 def plot(
     layout: Layout,
-    label_qubits: Optional[bool] = True,
+    label_qubits: bool = True,
+    draw_patches: bool = True,
     *,
     axis: Optional[plt.Axes] = None,
 ) -> Union[Figure, None]:
@@ -36,7 +37,7 @@ def plot(
         [description]
     """
     plotter = MatplotlibPlotter(layout, axis)
-    return plotter.plot(label_qubits)
+    return plotter.plot(label_qubits, draw_patches)
 
 
 class MatplotlibPlotter:
@@ -91,7 +92,7 @@ class MatplotlibPlotter:
         self.ax.axis("off")
 
     def _label_qubit(self, qubit: str, x: float, y: float) -> None:
-        match = RE_FILTER.match(qubit)
+        match = RE_FILTER.match(str(qubit))
         if match is None:
             raise ValueError(f"Unexpected qubit label {qubit}")
         label, ind = match.groups()
