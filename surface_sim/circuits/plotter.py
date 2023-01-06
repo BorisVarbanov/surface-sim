@@ -1,5 +1,5 @@
 import re
-from copy import deepcopy
+from copy import copy
 from typing import Iterable, List, Optional
 
 from matplotlib import pyplot as plt
@@ -9,6 +9,8 @@ from matplotlib.patches import Arc, Ellipse, Rectangle
 
 from ..circuits import Circuit, Gate
 from ..layouts import Layout
+
+LABEL_DICT = dict(hadamard="H", reset="R", x_gate="X", z_gate="Z")
 
 
 def plot(
@@ -80,10 +82,10 @@ class MatplotlibPlotter:
         return self.fig
 
     def _plot_gate(self, gate: Gate) -> None:
-        metadata = deepcopy(gate._plot_metadata)
+        metadata = {}
 
         time = gate.time
-        if gate.label == "cnot":  # FIXME
+        if gate.name == "cnot":  # FIXME
             ctrl_q, target_q = gate.qubits
             q_start = self.qubits.index(ctrl_q)
             q_end = self.qubits.index(target_q)
@@ -133,7 +135,7 @@ class MatplotlibPlotter:
                 zorder=self.zorders["circle"],
             )
 
-        elif gate.label == "cphase":
+        elif gate.name == "cphase":
             ctrl_q, target_q = gate.qubits
             q_start = self.qubits.index(ctrl_q)
             q_end = self.qubits.index(target_q)
@@ -168,7 +170,7 @@ class MatplotlibPlotter:
                 )
             )
 
-        elif gate.label == "measure":
+        elif gate.name == "measure":
             ind = self.qubits.index(gate.qubits[0])
             rect = Rectangle(
                 (time - 0.3, ind - 0.3),
@@ -217,11 +219,12 @@ class MatplotlibPlotter:
                 zorder=self.zorders["box"],
             )
             self.ax.add_patch(rect)
-            if gate.label is not None:
+            if gate.name is not None:
+                label = LABEL_DICT.get(gate.name, "G")
                 self.ax.text(
                     time,
                     q_start + 0.5 * (q_end - q_start),
-                    metadata.get("label", r"$\mathcal{G}$"),
+                    f"$\mathrm{{{label}}}$",
                     ha="center",
                     va="center",
                     zorder=self.zorders["text"],

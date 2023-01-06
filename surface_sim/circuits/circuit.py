@@ -1,12 +1,25 @@
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from copy import copy
-from typing import List, Optional, Sequence, Tuple, Union
+from itertools import chain
+from typing import Any, Optional, Sequence, Tuple, Union
 
-from ..states import State
+import stim
+
+from ..operations import BaseOperation
+
+
+def gate_time(gate: Gate) -> int:
+    return gate.time
 
 
 class CircuitBase(ABC):
-    def __init__(self, qubits: Union[str, Sequence[str]], time: int) -> None:
+    def __init__(
+        self,
+        qubits: Union[str, Sequence[str]],
+        time: int,
+    ) -> None:
         if isinstance(qubits, str):
             self._qubits = (qubits,)
         elif isinstance(qubits, Sequence):
@@ -20,10 +33,11 @@ class CircuitBase(ABC):
             raise ValueError(f"time expected as int type, instead got {type(time)}.")
         if time < 0:
             raise ValueError("time expected to be a positive int.")
+
         self._time = time
 
     @abstractmethod
-    def __copy__(self) -> "CircuitBase":
+    def __copy__(self) -> CircuitBase:
         """__copy__ Abstract copy constructor."""
         pass
 
@@ -35,28 +49,31 @@ class CircuitBase(ABC):
     def time(self) -> int:
         return self._time
 
+    @abstractmethod
+    def shift(self, time: int) -> CircuitBase:
+        pass
+
     @property
     def num_qubits(self) -> int:
         return len(self._qubits)
 
     @property
+    def depth(self) -> int:
+        return max(gate.time for gate in self.gates)
+
+    @property
     @abstractmethod
-    def gates(self) -> Tuple["Gate", ...]:
+    def gates(self) -> Tuple[Gate, ...]:
         """List of gates, associated with this circuit."""
         pass
 
-    def __len__(self) -> int:
-        return len(self.gates)
-
-    def __add__(self, other: "CircuitBase") -> "Circuit":
+    def __add__(self, other: CircuitBase) -> Circuit:
         """
         __add__ Adds another base circuit element.
-
         Parameters
-        ----------
+        ----------s
         other : CircuitBase
             The circuit element to be added.
-
         Returns
         -------
         Circuit
@@ -65,128 +82,142 @@ class CircuitBase(ABC):
         shared_qubits = set(self.qubits).intersection(other.qubits)
 
         if shared_qubits:
-            max_time_gap = 0
+            max_gap = 0
 
             for qubit in shared_qubits:
-                last_time = qubit_time(self.gates, qubit, reverse=True) + 1
-                next_time = qubit_time(other.gates, qubit)
+                gap = self.last_time(qubit) - other.next_time(qubit)
+                if gap > max_gap:
+                    max_gap = gap
 
-                time_gap = last_time - next_time
-                if time_gap > max_time_gap:
-                    max_time_gap = time_gap
-
-            time_shift = max_time_gap + 2 * other.time
-            shifted_circ = other.shift_to(time=time_shift)
+            shifted_circ = other.shift(max_gap + 1)
 
             new_qubits = set(other.qubits).difference(shared_qubits)
-            qubits = self.qubits + tuple(new_qubits)
-            gates = self.gates + shifted_circ.gates
+            qubits = tuple(chain(self.qubits, new_qubits))
+            gates = tuple(chain(self.gates, shifted_circ.gates))
             return Circuit(qubits, gates)
 
-        qubits = self.qubits + other.qubits
-        gates = self.gates + other.gates
+        qubits = tuple(chain(self.qubits, other.qubits))
+        gates = tuple(chain(self.gates, other.gates))
         return Circuit(qubits, gates)
+
+    def compile(self) -> stim.Circuit:
+        circuit = stim.Circuit()
+
+        for gate in self.gates:
+            inds = [self.qubits.index(q) for q in gate.qubits]
+            for unit_op in gate.operation.units:
+                circuit.append(unit_op.to_instruction(inds))
+
+        return circuit
+
+    def next_time(self, qubit: str) -> int:
+        if qubit not in self._qubits:
+            raise ValueError("qubit not in circuit.")
+
+        for gate in self.gates:
+            if qubit in gate.qubits:
+                return gate.time
+
+    def last_time(self, qubit: str) -> int:
+        if qubit not in self._qubits:
+            raise ValueError("qubit not in circuit.")
+
+        for gate in reversed(self.gates):
+            if qubit in gate.qubits:
+                return gate.time
 
 
 class Gate(CircuitBase):
     def __init__(
-        self, qubits: Union[str, Sequence[str]], time: int, label: str
+        self,
+        operation: BaseOperation,
+        qubits: Union[str, Sequence[str]],
+        time: int,
+        name: Optional[str] = None,
+        *,
+        plot_metadata: Optional[dict[str, Any]] = None,
     ) -> None:
         super().__init__(qubits, time)
-        self._label = label
+        self._op = operation
+        self._name = name
+        self.plot_metadata = plot_metadata
 
     @property
-    def label(self) -> str:
-        return self._label
+    def name(self) -> str:
+        return self._name
 
-    def __copy__(self) -> "Gate":
+    @property
+    def operation(self) -> str:
+        return self._op
+
+    def __copy__(self) -> Gate:
         gate_copy = self.__class__(
-            self._qubits,
-            self._time,
-            self._label,
+            operation=self._op,
+            qubits=self._qubits,
+            time=self._time,
+            name=self._name,
+            plot_metadata=self.plot_metadata,
         )
         return gate_copy
 
     def __repr__(self) -> str:
-        return f"{self.label}({qubits_str(self.qubits)})"
+        return f"{self._name}({qubits_str(self.qubits)})"
 
     def __str__(self) -> str:
         if self.num_qubits == 1:
-            return f"{self._label} on {qubits_str(self.qubits)}"
-        return f"{self._label} on ({qubits_str(self.qubits)})"
+            return f"{self._name} on {qubits_str(self.qubits)}"
+        return f"{self._name} on ({qubits_str(self.qubits)})"
 
     @property
-    def gates(self) -> Tuple["Gate"]:
+    def gates(self) -> Tuple[Gate, ...]:
         return (self,)
 
-    @abstractmethod
-    def apply_to(self, state: State) -> Union[None, int]:
-        pass
+    def shift(self, time: int) -> CircuitBase:
+        shifted_copy = copy(self)
+        shifted_copy._time = time
+        return shifted_copy
 
 
 class Circuit(CircuitBase):
     def __init__(
         self,
         qubits: Union[str, Sequence[str]],
-        gates: Tuple[Gate, ...],
+        gates: Sequence[Gate],
     ) -> None:
-
+        time = min(gate.time for gate in gates)
+        super().__init__(qubits, time)
         if isinstance(gates, Gate):
             self._gates = (gates,)
         elif isinstance(gates, Sequence):
             self._gates = tuple(gates)
         else:
             raise ValueError(
-                "gates expected to be either a Gate or a sequence of Gates."
+                "gates expected to be of type Gate or "
+                f"Sequence[Gate], instead got {type(gates)}"
             )
 
-        time = min([gate.time for gate in self._gates])
-        super().__init__(qubits, time)
-
-    def __copy__(self) -> "Circuit":
+    def __copy__(self) -> Circuit:
         return self.__class__(
-            copy(self._qubits),
-            copy(self._gates),
+            self._qubits,
+            self._gates,
         )
 
     @property
-    def gates(self) -> Tuple[Gate]:
+    def gates(self) -> Tuple[Gate, ...]:
         return self._gates
 
-    def apply_to(self, state: State) -> Union[None, List[int]]:
-        outcomes = []
-        for gate in self.gates:
-            outcome = gate.apply_to(state)
-            if outcome:
-                outcomes.append(outcome)
-        return outcomes or None
-
-    """
-    @time.setter
-    def time(self, new_time: int) -> None:
-        if not isinstance(new_time, int):
-            raise ValueError(
-                f"time expected as int type, instead got {type(new_time)}."
-            )
-        if new_time < 0:
-            raise ValueError("time expected to be a positive int.")
-
-        time_shift = new_time - self._time
-        for gate in self.gates:
-            gate.time += time_shift
-        self._time = new_time
-    """
+    def shift(self, time: int) -> CircuitBase:
+        shifted_gates = [gate.shift(time) for gate in self.gates]
+        return Circuit(self._qubits, shifted_gates)
 
 
 def qubits_str(qubits: Sequence[str]) -> str:
     """
     _get_q_str Converts a list of qubit labels to a comma-separated string format.
-
     Parameters
     ----------
     qubits : List[str]
         The list of qubits.
-
     Returns
     -------
     str
