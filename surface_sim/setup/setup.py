@@ -1,5 +1,4 @@
 from collections import defaultdict
-from copy import copy
 from typing import Dict, Type, TypeVar
 
 import yaml
@@ -12,11 +11,14 @@ class Setup:
         self._qubits = {}
         self._gates = defaultdict(dict)
 
-        self.name = setup_dict.get("name", "Setup")
+        self._name = setup_dict.get("name")
+        self._description = setup_dict.get("description")
         self._load_setup(setup_dict)
 
     def _load_setup(self, setup):
-        params = copy(setup.get("setup"))
+        params = setup.get("setup")
+        if not params:
+            raise ValueError("setup not found or contains no information")
 
         for params_dict in params:
             qubits = tuple(params_dict.pop("qubits", tuple()))
