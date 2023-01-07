@@ -132,7 +132,12 @@ setup:
   - qubits: [D9, X4]
     gate_error: 0.0290
 
-  - time_rotate_y: 20
-    time_rotate_x: 20
-    time_cphase: 40
-    time_measure: 800
+  - sq_time: 20
+    cz_time: 60
+    meas_time: 500
+    lru_time: 300
+
+  - sq_error: 0.001
+  - cz_error: 0.001
+  - meas_error: 0.001
+
