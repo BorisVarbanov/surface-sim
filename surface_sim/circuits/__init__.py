@@ -1,5 +1,4 @@
-from . import gates, library
-from .circuit import Circuit
-from .circuit_util import get_circuit
+from .circuit import Circuit, Gate
+from .plotter import plot
 
-__all__ = ["gates", "get_circuit", "library", "Circuit"]
+__all__ = ["Circuit", "Gate", "plot"]
