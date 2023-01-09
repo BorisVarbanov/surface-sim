@@ -1,32 +1,74 @@
-from typing import Tuple
+from itertools import pairwise
+from typing import Iterable
 
-from ..operations import Operation
-from ..operations import library as ops
+from stim import CircuitInstruction
+
 from ..setup import Setup
-from .model import Model, gate
+from .model import Model
 
 
 class CircuitNoiseModel(Model):
     def __init__(self, setup: Setup) -> None:
         super().__init__(setup)
 
-    @gate
-    def hadamard(self, qubit: str) -> Tuple[Operation, Operation]:
-        hadamard = ops.hadamard()
-        error_prob = self.setup.param("sq_error_prob", qubit)
-        depol_noise = ops.depol_channel(error_prob)
-        return (hadamard, depol_noise)
+    def x_gate(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
+        targets = list(qubits)
 
-    @gate
-    def cphase(self, stat_qubit: str, flux_qubit: str) -> Tuple[Operation, Operation]:
-        cphase = ops.cphase()
-        error_prob = self.setup.param("sq_error_prob", stat_qubit, flux_qubit)
-        depol_noise = ops.depol_channel(error_prob, num_qubits=2)
-        return (cphase, depol_noise)
+        yield CircuitInstruction("X", targets)
 
-    @gate
-    def measure(self, qubit: str) -> Tuple[Operation, Operation]:
-        meas = ops.measure()
-        error_prob = self.setup.param("meas_error_prob", qubit)
-        bitflip_noise = ops.bitflip_channel(error_prob)
-        return (bitflip_noise, meas)
+        for qubit in qubits:
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [qubit], [prob])
+
+    def z_gate(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
+        targets = list(qubits)
+
+        yield CircuitInstruction("Z", targets)
+
+        for qubit in qubits:
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [qubit], [prob])
+
+    def hadamard(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
+        targets = list(qubits)
+
+        yield CircuitInstruction("H", targets)
+
+        for qubit in qubits:
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [qubit], [prob])
+
+    def cphase(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
+        targets = list(qubits)
+        if len(targets) % 2 != 0:
+            raise ValueError("Expected and even number of qubits.")
+
+        yield CircuitInstruction("CZ", targets)
+
+        for pair in pairwise(targets):
+            prob = self.param("cz_error_prob", *pair)
+            yield CircuitInstruction("DEPOLARIZE2", pair, [prob])
+
+    def measure(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
+        targets = list(qubits)
+
+        for target in targets:
+            prob = self.param("meas_error_prob", target)
+            yield CircuitInstruction("X_ERROR", [target], [prob])
+
+        yield CircuitInstruction("M", targets)
+
+    def reset(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
+        targets = list(qubits)
+        yield CircuitInstruction("R", targets)
+
+        for target in targets:
+            prob = self.param("reset_error_prob", target)
+            yield CircuitInstruction("X_ERROR", [target], [prob])
+
+    def idle(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
+        targets = list(qubits)
+
+        for target in targets:
+            prob = self.param("idle_error_prob", target)
+            yield CircuitInstruction("DEPOLARIZE1", [target], [prob])
