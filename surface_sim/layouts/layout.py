@@ -179,6 +179,8 @@ class Layout:
 
         mapping = dict(zip(nodes, inds))
         relabled_graph = nx.relabel_nodes(indexed_layout.graph, mapping)
+        for node, ind in zip(nodes, inds):
+            relabled_graph.nodes[ind]["name"] = node
         indexed_layout.graph = relabled_graph
         return indexed_layout
 
