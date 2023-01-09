@@ -1,7 +1,11 @@
-name: maxiumus_layout.
-description: Layout file for the 17-qubits "Maxiumus"device used for the distance-3 logical quantum memory experiment.
+name: Rotated d=3 surface code layout.
+description: Layout file for a 17-qubits rotated surface code. Follows the frequency scheme and labeling used in the DC lab.
 
-freq_group_order: ["low", "mid", "high"]
+freq_order: ["low", "mid", "high"]
+
+interaction_order:
+  x_type: ["north_east", "north_west", "south_east", "south_west"]
+  z_type: ["north_east", "south_east", "north_west", "south_west"]
 
 layout:
   - qubit: D1
