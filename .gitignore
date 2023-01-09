@@ -136,8 +136,6 @@ dmypy.json
 # Datasets
 *.nc
 
-# Jupyter notebooks (should be converted to py files)
-*.ipynb
 
 # VScode settings
 .vscode
