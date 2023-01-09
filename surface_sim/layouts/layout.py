@@ -354,6 +354,7 @@ class Layout:
         init_coord = (0, 0)
 
         set_nodes = set()
+
         queue = deque()
 
         queue.appendleft((init_node, init_coord))
@@ -369,6 +370,22 @@ class Layout:
                     shifts = tuple(map(get_shift, card_dirs))
                     nbr_coords = tuple(map(sum, zip(coords, shifts)))
                     queue.appendleft((nbr_node, nbr_coords))
+        """
+
+        def dfs_position(node, coords):
+            if node not in set_nodes:
+                self.graph.nodes[node]["coords"] = coords
+                set_nodes.add(node)
+
+                for _, nbr_node, ord_dir in self.graph.edges(node, data="direction"):
+                    card_dirs = ord_dir.split("_")
+                    shifts = tuple(map(get_shift, card_dirs))
+                    nbr_coords = tuple(map(sum, zip(coords, shifts)))
+
+                    dfs_position(nbr_node, nbr_coords)
+
+        dfs_position(init_node, init_coord)
+        """
 
 
 def valid_attrs(attrs: Dict[str, Any], **conditions: Dict[str, Any]) -> bool:
