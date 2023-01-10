@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from copy import copy, deepcopy
 from os import path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import networkx as nx
 import yaml
@@ -15,13 +15,13 @@ class Layout:
     A general qubit layout class
     """
 
-    def __init__(self, setup: Dict[str, Dict[str, Any]]) -> None:
+    def __init__(self, setup: Dict[str, Any]) -> None:
         """
         __init__ Initiailizes the layout.
 
         Parameters
         ----------
-        setup : Dict[str, Dict[str, Any]]
+        setup : Dict[str, Any]
             The layout setup, provided as a dict.
 
             The setup dictionary is expected to have a 'layout' item, containing
@@ -54,10 +54,30 @@ class Layout:
         self._load_layout(setup)
         self._set_coords()
 
+        qubits = list(self.graph.nodes)
+        num_qubits = len(qubits)
+        self._qubit_inds = dict(zip(qubits, range(num_qubits)))
+
     def __copy__(self) -> Layout:
+        """
+        __copy__ copies the Layout.
+
+        Returns
+        -------
+        Layout
+            _description_
+        """
         return Layout(self.to_dict())
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        to_dict return a setup dictonary for the layout.
+
+        Returns
+        -------
+        Dict[str, Any]
+            The setup dictionary of the setup.
+        """
         setup = dict()
 
         setup["name"] = self.name
@@ -83,32 +103,19 @@ class Layout:
         setup["layout"] = layout
         return setup
 
-    def get_inds(self, **conds: Dict[str, Any]) -> List[int]:
+    def get_inds(self, qubits: List[str]) -> List[int]:
         """
-        get_inds Return the qubit indices that meet a set of conditions.
-
-        The order that the qubits appear in is defined during the initialization
-        of the layout and remains fixed.
-
-        The conditions conds are the keyward arguments that specify the value (Any)
-        that each parameter label (str) needs to take.
+        get_inds Returns the indices of the qubits.
 
         Returns
         -------
         List[int]
-            The list of qubit indices that meet all conditions.
+            The list of qubit indices.
         """
-        if conds:
-            node_attrs = self.graph.nodes.values()
-            inds = [
-                i for i, attrs in enumerate(node_attrs) if valid_attrs(attrs, **conds)
-            ]
-            return inds
-
-        inds = list(range(self.graph.number_of_nodes()))
+        inds = [self._qubit_inds[qubit] for qubit in qubits]
         return inds
 
-    def get_qubits(self, **conds: Dict[str, Any]) -> List[str]:
+    def get_qubits(self, **conds: Any) -> List[str]:
         """
         get_qubits Return the qubit labels that meet a set of conditions.
 
@@ -132,10 +139,13 @@ class Layout:
         return nodes
 
     def get_neighbors(
-        self, qubit: str, direction: Optional[str] = None, **conds: Dict[str, Any]
-    ) -> List[str]:
+        self,
+        qubits: Union[str, List[str]],
+        direction: Optional[str] = None,
+        as_pairs: bool = False,
+    ) -> Union[List[str], List[Tuple[str, str]]]:
         """
-        get_neighbors Returns the list of qubit labels, neighboring a specific qubit
+        get_neighbors Returns the list of qubit labels, neighboring specific qubits
         that meet a set of conditions.
 
         The order that the qubits appear in is defined during the initialization
@@ -146,29 +156,29 @@ class Layout:
 
         Parameters
         ----------
-        qubit : str
-            The qubit label, whose neighbors are being considered
+        qubits : str
+            The qubit labels, whose neighbors are being considered
+
+        direction : Optional[str]
+            The direction along which to consider the neigbors along.
 
         Returns
         -------
         List[str]
             The list of qubit label, neighboring qubit, that meet the conditions.
         """
-        adj_view = self.graph.adj[qubit]
+        edge_view = self.graph.out_edges(qubits, data=True)
 
-        if direction is not None:
-            nbr_nodes = [
-                node
-                for node, attrs in adj_view.items()
-                if attrs["direction"] == direction
-            ]
-        else:
-            nbr_nodes = list(adj_view.keys())
+        start_nodes = []
+        end_nodes = []
+        for start_node, end_node, attrs in edge_view:
+            if direction is None or attrs["direction"] == direction:
+                start_nodes.append(start_node)
+                end_nodes.append(end_node)
 
-        if conds:
-            nodes = [n for n in nbr_nodes if valid_attrs(self.graph[n], **conds)]
-            return nodes
-        return nbr_nodes
+        if as_pairs:
+            return list(zip(start_nodes, end_nodes))
+        return end_nodes
 
     def index_qubits(self) -> Layout:
         indexed_layout = copy(self)
@@ -372,25 +382,9 @@ class Layout:
                     shifts = tuple(map(get_shift, card_dirs))
                     nbr_coords = tuple(map(sum, zip(coords, shifts)))
                     queue.appendleft((nbr_node, nbr_coords))
-        """
-
-        def dfs_position(node, coords):
-            if node not in set_nodes:
-                self.graph.nodes[node]["coords"] = coords
-                set_nodes.add(node)
-
-                for _, nbr_node, ord_dir in self.graph.edges(node, data="direction"):
-                    card_dirs = ord_dir.split("_")
-                    shifts = tuple(map(get_shift, card_dirs))
-                    nbr_coords = tuple(map(sum, zip(coords, shifts)))
-
-                    dfs_position(nbr_node, nbr_coords)
-
-        dfs_position(init_node, init_coord)
-        """
 
 
-def valid_attrs(attrs: Dict[str, Any], **conditions: Dict[str, Any]) -> bool:
+def valid_attrs(attrs: Dict[str, Any], **conditions: Any) -> bool:
     """
     valid_attrs Checks if the items in attrs match each condition in conditions.
     Both attrs and conditions are dictionaries mapping parameter labels (str)
