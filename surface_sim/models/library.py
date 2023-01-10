@@ -1,74 +1,81 @@
-from itertools import pairwise
-from typing import Iterable
+from typing import Iterable, Iterator, List, Tuple
 
 from stim import CircuitInstruction
 
+from ..layouts import Layout
 from ..setup import Setup
 from .model import Model
 
 
+def grouper(iterable: Iterable[str], block_size: int) -> Iterator[Tuple[str, ...]]:
+    "Collect data into non-overlapping fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3) --> ABC DEF ValueError
+    args = [iter(iterable)] * block_size
+    return zip(*args, strict=True)
+
+
 class CircuitNoiseModel(Model):
-    def __init__(self, setup: Setup) -> None:
-        super().__init__(setup)
+    def __init__(self, setup: Setup, layout: Layout) -> None:
+        super().__init__(setup, layout)
 
-    def x_gate(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
-        targets = list(qubits)
+    def x_gate(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
+        yield CircuitInstruction("X", inds)
 
-        yield CircuitInstruction("X", targets)
-
-        for qubit in qubits:
+        for qubit, ind in zip(qubits, inds):
             prob = self.param("sq_error_prob", qubit)
-            yield CircuitInstruction("DEPOLARIZE1", [qubit], [prob])
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
 
-    def z_gate(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
-        targets = list(qubits)
+    def z_gate(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
 
-        yield CircuitInstruction("Z", targets)
+        yield CircuitInstruction("Z", inds)
 
-        for qubit in qubits:
+        for qubit, ind in zip(qubits, inds):
             prob = self.param("sq_error_prob", qubit)
-            yield CircuitInstruction("DEPOLARIZE1", [qubit], [prob])
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
 
-    def hadamard(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
-        targets = list(qubits)
+    def hadamard(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
 
-        yield CircuitInstruction("H", targets)
+        yield CircuitInstruction("H", inds)
 
-        for qubit in qubits:
+        for qubit, ind in zip(qubits, inds):
             prob = self.param("sq_error_prob", qubit)
-            yield CircuitInstruction("DEPOLARIZE1", [qubit], [prob])
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
 
-    def cphase(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
-        targets = list(qubits)
-        if len(targets) % 2 != 0:
+    def cphase(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
+        if len(qubits) % 2 != 0:
             raise ValueError("Expected and even number of qubits.")
 
-        yield CircuitInstruction("CZ", targets)
+        inds = self.layout.get_inds(qubits)
 
-        for pair in pairwise(targets):
-            prob = self.param("cz_error_prob", *pair)
-            yield CircuitInstruction("DEPOLARIZE2", pair, [prob])
+        yield CircuitInstruction("CZ", inds)
 
-    def measure(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
-        targets = list(qubits)
+        for qubit_pair, ind_pair in zip(grouper(qubits, 2), grouper(inds, 2)):
+            prob = self.param("cz_error_prob", *qubit_pair)
+            yield CircuitInstruction("DEPOLARIZE2", ind_pair, [prob])
 
-        for target in targets:
-            prob = self.param("meas_error_prob", target)
-            yield CircuitInstruction("X_ERROR", [target], [prob])
+    def measure(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
 
-        yield CircuitInstruction("M", targets)
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("meas_error_prob", qubit)
+            yield CircuitInstruction("X_ERROR", [ind], [prob])
 
-    def reset(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
-        targets = list(qubits)
-        yield CircuitInstruction("R", targets)
+        yield CircuitInstruction("M", inds)
 
-        for target in targets:
-            prob = self.param("reset_error_prob", target)
-            yield CircuitInstruction("X_ERROR", [target], [prob])
+    def reset(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
+        yield CircuitInstruction("R", inds)
 
-    def idle(self, qubits: Iterable[int]) -> Iterable[CircuitInstruction]:
-        targets = list(qubits)
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("reset_error_prob", qubit)
+            yield CircuitInstruction("X_ERROR", [ind], [prob])
 
-        for target in targets:
-            prob = self.param("idle_error_prob", target)
-            yield CircuitInstruction("DEPOLARIZE1", [target], [prob])
+    def idle(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("idle_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
