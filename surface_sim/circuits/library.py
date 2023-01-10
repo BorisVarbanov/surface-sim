@@ -1,16 +1,13 @@
+from itertools import chain
+
 from stim import Circuit
 
-from ..layouts import Layout
 from ..models import Model
 
 
-def log_meas(
-    model: Model,
-    layout: Layout,
-    rot_basis: bool = False,
-) -> Circuit:
-    anc_qubits = layout.get_qubits(role="anc")
-    data_qubits = layout.get_qubits(role="data")
+def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
+    anc_qubits = model.layout.get_qubits(role="anc")
+    data_qubits = model.layout.get_qubits(role="data")
 
     circuit = Circuit()
 
@@ -30,21 +27,19 @@ def log_meas(
         circuit.append(instruction)
 
     circuit.append("TICK")
-
     return circuit
 
 
-def qec_round(model: Model, layout: Layout) -> Circuit:
-    data_qubits = layout.get_qubits(role="data")
-    anc_qubits = layout.get_qubits(role="anc")
+def qec_round(model: Model) -> Circuit:
+    data_qubits = model.layout.get_qubits(role="data")
+    anc_qubits = model.layout.get_qubits(role="anc")
 
     qubits = data_qubits + anc_qubits
-    qubit_set = set(qubits)
 
     circuit = Circuit()
 
-    for stab_type, gate_order in layout.interaction_order.items():
-        stab_qubits = layout.get_qubits(role="anc", stab_type=stab_type)
+    for stab_type, gate_order in model.layout.interaction_order.items():
+        stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
 
         if stab_type == "x_type":
             rot_qubits = data_qubits + stab_qubits
@@ -52,22 +47,25 @@ def qec_round(model: Model, layout: Layout) -> Circuit:
             for instruction in model.hadamard(rot_qubits):
                 circuit.append(instruction)
 
-            idling_qubits = list(qubit_set.difference(rot_qubits))
+            idling_qubits = [
+                qubit for qubit in qubits if qubit not in rot_qubits
+            ]  # Should be done by set.difference, but qubit order gets messed up
             for instruction in model.idle(idling_qubits):
                 circuit.append(instruction)
             circuit.append("TICK")
 
         for ord_dir in gate_order:
-            int_qubits = []
-            for anc_qubit in stab_qubits:
-                neighbors = layout.get_neighbors(anc_qubit, direction=ord_dir)
-                for data_qubit in neighbors:
-                    int_qubits.extend((anc_qubit, data_qubit))
+            int_pairs = model.layout.get_neighbors(
+                stab_qubits, direction=ord_dir, as_pairs=True
+            )
+            int_qubits = list(chain.from_iterable(int_pairs))
 
             for instruction in model.cphase(int_qubits):
                 circuit.append(instruction)
 
-            idling_qubits = list(set(qubits).difference(int_qubits))
+            idling_qubits = [
+                qubit for qubit in qubits if qubit not in int_qubits
+            ]  # Should be done by set.difference, but qubit order gets messed up
             for instruction in model.idle(idling_qubits):
                 circuit.append(instruction)
             circuit.append("TICK")
@@ -80,7 +78,9 @@ def qec_round(model: Model, layout: Layout) -> Circuit:
         for instruction in model.hadamard(rot_qubits):
             circuit.append(instruction)
 
-        idling_qubits = list(qubit_set.difference(rot_qubits))
+        idling_qubits = [
+            qubit for qubit in qubits if qubit not in rot_qubits
+        ]  # Should be done by set.difference, but qubit order gets messed up
         for instruction in model.idle(idling_qubits):
             circuit.append(instruction)
         circuit.append("TICK")
@@ -91,23 +91,18 @@ def qec_round(model: Model, layout: Layout) -> Circuit:
     for instruction in model.idle(data_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
+    return circuit
 
-    circuit.append("TICK")
 
-
-def log_init(
-    model: Model,
-    layout: Layout,
-    log_state: int,
-    rot_basis: bool = False,
-) -> Circuit:
-    anc_qubits = layout.get_qubits(role="anc")
-    data_qubits = layout.get_qubits(role="data")
+def log_init(model: Model, log_state: int, rot_basis: bool = False) -> Circuit:
+    anc_qubits = model.layout.get_qubits(role="anc")
+    data_qubits = model.layout.get_qubits(role="data")
 
     circuit = Circuit()
 
     for instruction in model.reset(data_qubits + anc_qubits):
         circuit.append(instruction)
+    circuit.append("TICK")
 
     if rot_basis:
         for instruction in model.hadamard(data_qubits):
@@ -129,16 +124,12 @@ def log_init(
             circuit.append(instruction)
 
         circuit.append("TICK")
-
     return circuit
 
 
-def log_x(
-    model: Model,
-    layout: Layout,
-) -> Circuit:
-    anc_qubits = layout.get_qubits(role="anc")
-    data_qubits = layout.get_qubits(role="data")
+def log_x(model: Model) -> Circuit:
+    anc_qubits = model.layout.get_qubits(role="anc")
+    data_qubits = model.layout.get_qubits(role="data")
 
     circuit = Circuit()
 
@@ -147,16 +138,14 @@ def log_x(
 
     for instruction in model.idle(anc_qubits):
         circuit.append(instruction)
+    circuit.append("TICK")
 
     return circuit
 
 
-def log_z(
-    model: Model,
-    layout: Layout,
-) -> Circuit:
-    anc_qubits = layout.get_qubits(role="anc")
-    data_qubits = layout.get_qubits(role="data")
+def log_z(model: Model) -> Circuit:
+    anc_qubits = model.layout.get_qubits(role="anc")
+    data_qubits = model.layout.get_qubits(role="data")
 
     circuit = Circuit()
 
@@ -165,5 +154,6 @@ def log_z(
 
     for instruction in model.idle(anc_qubits):
         circuit.append(instruction)
+    circuit.append("TICK")
 
     return circuit
