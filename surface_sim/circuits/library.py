@@ -36,13 +36,21 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
     return circuit
 
 
-def qec_round(model: Model, null_detector=False) -> Circuit:
+def qec_round(model: Model, time_comparison: int = 2) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
     of the given model. 
-    If null_detector, the detectors correspond to the ancilla outcome 
-    (used for the first round of the QEC code). 
+    
+    Params
+    -------
+    time_comparison
+        Speficies the time difference (in qec cycle units) for
+        the comparison of the ancilla outcomes in the detector
     """
+    if (not isinstance(time_comparison, int)) or time_comparison < 0:
+        raise ValueError("'time_comparison' must be a positive integer,"
+            f" but {time_comparison} (type={type(time_comparison)}) was given")
+
     data_qubits = model.layout.get_qubits(role="data")
     anc_qubits = model.layout.get_qubits(role="anc")
 
@@ -106,10 +114,11 @@ def qec_round(model: Model, null_detector=False) -> Circuit:
 
     n_anc = len(anc_qubits)
     for idx, _ in enumerate(anc_qubits):
-        if null_detector:
+        if time_comparison == 0:
             circuit.append_from_stim_program_text(f"DETECTOR rec[{-n_anc + idx}]")
         else:
-            circuit.append_from_stim_program_text(f"DETECTOR rec[{-2*n_anc + idx}] rec[{-n_anc + idx}]")
+            t = time_comparison + 1
+            circuit.append_from_stim_program_text(f"DETECTOR rec[{-t*n_anc + idx}] rec[{-n_anc + idx}]")
 
     return circuit
 
