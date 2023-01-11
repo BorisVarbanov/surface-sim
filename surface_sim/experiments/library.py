@@ -12,9 +12,9 @@ def memory_exp(
 ) -> Circuit:
 
     init_circ = log_init(model, log_state, rot_basis)
-
+    first_qec_circ = qec_round(model, null_detector=True)
     qec_circ = qec_round(model)
     meas_circuit = log_meas(model, rot_basis)
 
-    experiment = init_circ + (qec_circ * num_rounds) + meas_circuit
+    experiment = init_circ + first_qec_circ + qec_circ * (num_rounds - 1) + meas_circuit
     return experiment
