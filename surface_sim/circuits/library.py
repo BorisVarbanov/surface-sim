@@ -33,10 +33,31 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
         circuit.append(instruction)
 
     circuit.append("TICK")
+
+    n_data = len(data_qubits)
+    n_anc = len(anc_qubits)
+    stab_qubits = model.layout.get_qubits(role="anc", stab_type="x_type" if rot_basis else "z_type")
+    for idx_anc, anc in enumerate(anc_qubits):
+        if anc not in stab_qubits:
+            continue
+        
+        detector_str = "DETECTOR"
+        for idx_data, data in enumerate(data_qubits):
+            if data in model.layout.get_neighbors(anc):
+                detector_str += f" rec[{- n_data + idx_data}]"
+
+        detector_str += f" rec[{- n_data - n_anc + idx_anc}]"
+        circuit.append_from_stim_program_text(detector_str)
+
+    observable_str = "OBSERVABLE_INCLUDE(0)"
+    for idx_data, _ in enumerate(data_qubits):
+        observable_str += f" rec[{-n_data + idx_data}]"
+    circuit.append_from_stim_program_text(observable_str)
+
     return circuit
 
 
-def qec_round(model: Model, time_comparison: int = 2) -> Circuit:
+def qec_round(model: Model, time_comparison: int = 2, stab_type_det=None) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
     of the given model. 
@@ -46,6 +67,9 @@ def qec_round(model: Model, time_comparison: int = 2) -> Circuit:
     time_comparison
         Speficies the time difference (in qec cycle units) for
         the comparison of the ancilla outcomes in the detector
+    stab_type_det
+        If specified, only adds detectors to the ancillas for the 
+        specific stabilizator type. 
     """
     if (not isinstance(time_comparison, int)) or time_comparison < 0:
         raise ValueError("'time_comparison' must be a positive integer,"
@@ -113,7 +137,10 @@ def qec_round(model: Model, time_comparison: int = 2) -> Circuit:
     circuit.append("TICK")
 
     n_anc = len(anc_qubits)
-    for idx, _ in enumerate(anc_qubits):
+    stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type_det)
+    for idx, anc in enumerate(anc_qubits):
+        if (stab_type_det is not None) and (anc not in stab_qubits):
+            continue
         if time_comparison == 0:
             circuit.append_from_stim_program_text(f"DETECTOR rec[{-n_anc + idx}]")
         else:
