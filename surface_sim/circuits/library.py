@@ -1,6 +1,6 @@
 from itertools import chain
 
-from stim import Circuit
+from stim import Circuit, target_rec
 
 from ..models import Model
 
@@ -39,20 +39,17 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
         stab_type="x_type" if rot_basis else "z_type"
     )
     for anc in proj_mat.coords["anc_qubit"]:
-        detector_str = "DETECTOR"
+        targets_meas = []
         for idx_data, data in enumerate(data_qubits):
             if proj_mat.sel(anc_qubit=anc, data_qubit=data) != 0:
-                detector_str += f" rec[{- n_data + idx_data}]"
+                targets_meas.append(-n_data + idx_data)
         idx_anc = anc_qubits.index(anc)
-        detector_str += (
-            f" rec[{- n_data - n_anc + idx_anc}] rec[{- n_data - 2*n_anc + idx_anc}]"
-        )
-        circuit.append_from_stim_program_text(detector_str)
+        targets_meas.append(-n_data - n_anc + idx_anc)
+        targets_meas.append(-n_data - 2 * n_anc + idx_anc)
+        circuit.append("DETECTOR", [target_rec(targ) for targ in targets_meas])
 
-    observable_str = "OBSERVABLE_INCLUDE(0)"
-    for idx_data, _ in enumerate(data_qubits):
-        observable_str += f" rec[{-n_data + idx_data}]"
-    circuit.append_from_stim_program_text(observable_str)
+    targets_meas = [-n_data + idx_data for idx_data in range(n_data)]
+    circuit.append("OBSERVABLE_INCLUDE", [target_rec(targ) for targ in targets_meas], 0)
 
     return circuit
 
@@ -132,14 +129,14 @@ def qec_round(model: Model, meas_comparison: bool = True) -> Circuit:
         circuit.append(instruction)
     circuit.append("TICK")
 
+    # detectors ordered as in the measurements
     n_anc = len(anc_qubits)
-    for idx, anc in enumerate(anc_qubits):
-        if meas_comparison:
-            circuit.append_from_stim_program_text(
-                f"DETECTOR rec[{-3*n_anc + idx}] rec[{-n_anc + idx}]"
-            )
-        else:
-            circuit.append_from_stim_program_text(f"DETECTOR rec[{-n_anc + idx}]")
+    if meas_comparison:
+        targets_meas = [[-3 * n_anc + idx, -n_anc + idx] for idx in range(n_anc)]
+    else:
+        targets_meas = [[-n_anc + idx] for idx in range(n_anc)]
+    for targs in targets_meas:
+        circuit.append("DETECTOR", [target_rec(targ) for targ in targs])
 
     return circuit
 
