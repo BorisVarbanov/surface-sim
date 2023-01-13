@@ -5,6 +5,13 @@ from stim import Circuit, target_rec
 from ..models import Model
 
 
+MEASUREMENT_RESET = False
+
+# With reset defect[n] = m[n] XOR m[n-1]
+# Wihtout reset defect[n] = m[n] XOR m[n-2]
+COMP_ROUNDS = 1 if MEASUREMENT_RESET else 2
+
+
 def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
     """
     Returns stim circuit corresponding to a logical measurement
@@ -129,10 +136,18 @@ def qec_round(model: Model, meas_comparison: bool = True) -> Circuit:
         circuit.append(instruction)
     circuit.append("TICK")
 
+    if MEASUREMENT_RESET:
+        for instruction in model.reset(anc_qubits):
+            circuit.append(instruction)
+        for instruction in model.idle(data_qubits):
+            circuit.append(instruction)
+
     # detectors ordered as in the measurements
     n_anc = len(anc_qubits)
     if meas_comparison:
-        targets_meas = [[-3 * n_anc + idx, -n_anc + idx] for idx in range(n_anc)]
+        targets_meas = [
+            [-(COMP_ROUNDS + 1) * n_anc + idx, -n_anc + idx] for idx in range(n_anc)
+        ]
     else:
         targets_meas = [[-n_anc + idx] for idx in range(n_anc)]
     for targs in targets_meas:
@@ -141,7 +156,7 @@ def qec_round(model: Model, meas_comparison: bool = True) -> Circuit:
     return circuit
 
 
-def log_init(model: Model, log_state: int, rot_basis: bool = False) -> Circuit:
+def init_qubits(model: Model, log_state: int, rot_basis: bool = False) -> Circuit:
     """
     Returns stim circuit corresponding to a logical initialization
     of the given model.
