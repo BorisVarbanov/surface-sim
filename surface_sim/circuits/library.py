@@ -34,19 +34,15 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
 
     circuit.append("TICK")
 
-    n_data = len(data_qubits)
-    n_anc = len(anc_qubits)
-    stab_qubits = model.layout.get_qubits(role="anc", stab_type="x_type" if rot_basis else "z_type")
-    for idx_anc, anc in enumerate(anc_qubits):
-        if anc not in stab_qubits:
-            continue
-        
+    n_data, n_anc = len(data_qubits), len(anc_qubits)
+    proj_mat = model.layout.projection_matrix(stab_type="x_type" if rot_basis else "z_type")
+    for anc in proj_mat.coords["anc_qubit"]:        
         detector_str = "DETECTOR"
         for idx_data, data in enumerate(data_qubits):
-            if data in model.layout.get_neighbors(anc):
+            if proj_mat.sel(anc_qubit=anc, data_qubit=data) != 0:
                 detector_str += f" rec[{- n_data + idx_data}]"
-
-        detector_str += f" rec[{- n_data - n_anc + idx_anc}]"
+        idx_anc = anc_qubits.index(anc)
+        detector_str += f" rec[{- n_data - n_anc + idx_anc}] rec[{- n_data - 2*n_anc + idx_anc}]"
         circuit.append_from_stim_program_text(detector_str)
 
     observable_str = "OBSERVABLE_INCLUDE(0)"
