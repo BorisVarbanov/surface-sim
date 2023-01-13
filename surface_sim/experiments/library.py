@@ -15,6 +15,11 @@ def memory_exp(
     qec_circ = qec_round(model)
     meas_circuit = log_meas(model, rot_basis)
 
-    experiment = init_circ + qec_round(model, time_comparison=0, stab_type_det="z_type") + \
-                 qec_round(model, time_comparison=0) + qec_circ * (num_rounds - 2) + meas_circuit
+    experiment = (
+        init_circ
+        + qec_round(model, meas_comparison=False)
+        + qec_round(model, meas_comparison=False)
+        + qec_circ * (num_rounds - 2)
+        + meas_circuit
+    )
     return experiment

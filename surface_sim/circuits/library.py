@@ -8,9 +8,9 @@ from ..models import Model
 def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
     """
     Returns stim circuit corresponding to a logical measurement
-    of the given model. 
-    By default, the logical measurement is in the Z basis. 
-    If rot_basis, the logical measurement is in the X basis. 
+    of the given model.
+    By default, the logical measurement is in the Z basis.
+    If rot_basis, the logical measurement is in the X basis.
     """
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
@@ -35,14 +35,18 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
     circuit.append("TICK")
 
     n_data, n_anc = len(data_qubits), len(anc_qubits)
-    proj_mat = model.layout.projection_matrix(stab_type="x_type" if rot_basis else "z_type")
-    for anc in proj_mat.coords["anc_qubit"]:        
+    proj_mat = model.layout.projection_matrix(
+        stab_type="x_type" if rot_basis else "z_type"
+    )
+    for anc in proj_mat.coords["anc_qubit"]:
         detector_str = "DETECTOR"
         for idx_data, data in enumerate(data_qubits):
             if proj_mat.sel(anc_qubit=anc, data_qubit=data) != 0:
                 detector_str += f" rec[{- n_data + idx_data}]"
         idx_anc = anc_qubits.index(anc)
-        detector_str += f" rec[{- n_data - n_anc + idx_anc}] rec[{- n_data - 2*n_anc + idx_anc}]"
+        detector_str += (
+            f" rec[{- n_data - n_anc + idx_anc}] rec[{- n_data - 2*n_anc + idx_anc}]"
+        )
         circuit.append_from_stim_program_text(detector_str)
 
     observable_str = "OBSERVABLE_INCLUDE(0)"
@@ -53,24 +57,20 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
     return circuit
 
 
-def qec_round(model: Model, time_comparison: int = 2, stab_type_det=None) -> Circuit:
+def qec_round(model: Model, meas_comparison: bool = True) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
-    of the given model. 
-    
+    of the given model.
+
     Params
     -------
-    time_comparison
-        Speficies the time difference (in qec cycle units) for
-        the comparison of the ancilla outcomes in the detector
+    meas_comparison
+        If True, the detector is set to the measurement of the ancilla
+        instead of to the comparison of consecutive syndromes.
     stab_type_det
-        If specified, only adds detectors to the ancillas for the 
-        specific stabilizator type. 
+        If specified, only adds detectors to the ancillas for the
+        specific stabilizator type.
     """
-    if (not isinstance(time_comparison, int)) or time_comparison < 0:
-        raise ValueError("'time_comparison' must be a positive integer,"
-            f" but {time_comparison} (type={type(time_comparison)}) was given")
-
     data_qubits = model.layout.get_qubits(role="data")
     anc_qubits = model.layout.get_qubits(role="anc")
 
@@ -133,15 +133,13 @@ def qec_round(model: Model, time_comparison: int = 2, stab_type_det=None) -> Cir
     circuit.append("TICK")
 
     n_anc = len(anc_qubits)
-    stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type_det)
     for idx, anc in enumerate(anc_qubits):
-        if (stab_type_det is not None) and (anc not in stab_qubits):
-            continue
-        if time_comparison == 0:
-            circuit.append_from_stim_program_text(f"DETECTOR rec[{-n_anc + idx}]")
+        if meas_comparison:
+            circuit.append_from_stim_program_text(
+                f"DETECTOR rec[{-3*n_anc + idx}] rec[{-n_anc + idx}]"
+            )
         else:
-            t = time_comparison + 1
-            circuit.append_from_stim_program_text(f"DETECTOR rec[{-t*n_anc + idx}] rec[{-n_anc + idx}]")
+            circuit.append_from_stim_program_text(f"DETECTOR rec[{-n_anc + idx}]")
 
     return circuit
 
@@ -149,9 +147,9 @@ def qec_round(model: Model, time_comparison: int = 2, stab_type_det=None) -> Cir
 def log_init(model: Model, log_state: int, rot_basis: bool = False) -> Circuit:
     """
     Returns stim circuit corresponding to a logical initialization
-    of the given model. 
-    By default, the logical measurement is in the Z basis. 
-    If rot_basis, the logical measurement is in the X basis. 
+    of the given model.
+    By default, the logical measurement is in the Z basis.
+    If rot_basis, the logical measurement is in the X basis.
     """
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
@@ -188,7 +186,7 @@ def log_init(model: Model, log_state: int, rot_basis: bool = False) -> Circuit:
 def log_x(model: Model) -> Circuit:
     """
     Returns stim circuit corresponding to a logical X gate
-    of the given model. 
+    of the given model.
     """
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
@@ -208,7 +206,7 @@ def log_x(model: Model) -> Circuit:
 def log_z(model: Model) -> Circuit:
     """
     Returns stim circuit corresponding to a logical Z gate
-    of the given model. 
+    of the given model.
     """
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
