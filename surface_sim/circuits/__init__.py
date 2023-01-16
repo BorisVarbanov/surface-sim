@@ -1,4 +1,4 @@
-from .library import init_qubits, log_meas, log_x, log_z, qec_round, MEASUREMENT_RESET
+from .library import init_qubits, log_meas, log_x, log_z, qec_round
 
 __all__ = [
     "init_qubits",
@@ -6,5 +6,4 @@ __all__ = [
     "log_x",
     "log_z",
     "qec_round",
-    "MEASUREMENT_RESET",
 ]
