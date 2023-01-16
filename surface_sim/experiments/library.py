@@ -13,22 +13,18 @@ def memory_exp(
 ) -> Circuit:
 
     init_circ = init_qubits(model, log_state, rot_basis)
+
     qec_circ = qec_round(model, meas_reset=meas_reset)
+    init_circ = qec_round(model, meas_reset=meas_reset, meas_comparison=False)
     meas_circuit = log_meas(model, rot_basis, meas_reset)
 
-    if meas_reset:
-        experiment = (
-            init_circ
-            + qec_round(model, meas_comparison=False, meas_reset=meas_reset)
-            + qec_circ * (num_rounds - 1)
-            + meas_circuit
-        )
-    else:
-        experiment = (
-            init_circ
-            + qec_round(model, meas_comparison=False, meas_reset=meas_reset)
-            + qec_round(model, meas_comparison=False, meas_reset=meas_reset)
-            + qec_circ * (num_rounds - 2)
-            + meas_circuit
-        )
+    num_init_rounds = 1 if meas_reset else 2
+
+    experiment = (
+        init_circ
+        + init_circ * num_init_rounds
+        + qec_circ * (num_rounds - num_init_rounds)
+        + meas_circuit
+    )
+
     return experiment
