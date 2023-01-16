@@ -63,7 +63,7 @@ def log_meas(
 
 
 def qec_round(
-    model: Model, meas_comparison: bool = True, meas_reset: bool = False
+    model: Model, meas_reset: bool = False, meas_comparison: bool = True
 ) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
