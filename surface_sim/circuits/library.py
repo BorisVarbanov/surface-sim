@@ -5,14 +5,11 @@ from stim import Circuit, target_rec
 from ..models import Model
 
 
-MEASUREMENT_RESET = False
-
-# With reset defect[n] = m[n] XOR m[n-1]
-# Wihtout reset defect[n] = m[n] XOR m[n-2]
-COMP_ROUNDS = 1 if MEASUREMENT_RESET else 2
-
-
-def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
+def log_meas(
+    model: Model,
+    rot_basis: bool = False,
+    meas_reset: bool = False,
+) -> Circuit:
     """
     Returns stim circuit corresponding to a logical measurement
     of the given model.
@@ -21,6 +18,10 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
     """
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
+
+    # With reset defect[n] = m[n] XOR m[n-1]
+    # Wihtout reset defect[n] = m[n] XOR m[n-2]
+    comp_rounds = 1 if meas_reset else 2
 
     circuit = Circuit()
 
@@ -51,8 +52,8 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
             if proj_mat.sel(anc_qubit=anc, data_qubit=data) != 0:
                 targets_meas.append(-n_data + idx_data)
         idx_anc = anc_qubits.index(anc)
-        targets_meas.append(-n_data - n_anc + idx_anc)
-        targets_meas.append(-n_data - 2 * n_anc + idx_anc)
+        for ind in range(1, comp_rounds + 1):
+            targets_meas.append(-n_data - (ind * n_anc) + idx_anc)
         circuit.append("DETECTOR", [target_rec(targ) for targ in targets_meas])
 
     targets_meas = [-n_data + idx_data for idx_data in range(n_data)]
@@ -61,7 +62,9 @@ def log_meas(model: Model, rot_basis: bool = False) -> Circuit:
     return circuit
 
 
-def qec_round(model: Model, meas_comparison: bool = True) -> Circuit:
+def qec_round(
+    model: Model, meas_comparison: bool = True, meas_reset: bool = False
+) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
     of the given model.
@@ -77,6 +80,10 @@ def qec_round(model: Model, meas_comparison: bool = True) -> Circuit:
     """
     data_qubits = model.layout.get_qubits(role="data")
     anc_qubits = model.layout.get_qubits(role="anc")
+
+    # With reset defect[n] = m[n] XOR m[n-1]
+    # Wihtout reset defect[n] = m[n] XOR m[n-2]
+    comp_rounds = 1 if meas_reset else 2
 
     qubits = data_qubits + anc_qubits
 
@@ -136,17 +143,19 @@ def qec_round(model: Model, meas_comparison: bool = True) -> Circuit:
         circuit.append(instruction)
     circuit.append("TICK")
 
-    if MEASUREMENT_RESET:
+    if meas_reset:
         for instruction in model.reset(anc_qubits):
             circuit.append(instruction)
         for instruction in model.idle(data_qubits):
             circuit.append(instruction)
 
+        circuit.append("TICK")
+
     # detectors ordered as in the measurements
     n_anc = len(anc_qubits)
     if meas_comparison:
         targets_meas = [
-            [-(COMP_ROUNDS + 1) * n_anc + idx, -n_anc + idx] for idx in range(n_anc)
+            [-(comp_rounds + 1) * n_anc + idx, -n_anc + idx] for idx in range(n_anc)
         ]
     else:
         targets_meas = [[-n_anc + idx] for idx in range(n_anc)]
