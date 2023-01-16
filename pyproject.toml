@@ -11,7 +11,7 @@ repository = "https://github.com/BorisVarbanov/surface17_simulation"
 keywords = ["quantum", "error correction", "surface code", "stabilizer simulation"]
 
 [tool.poetry.dependencies]
-python = "~3.10"
+python = "^3.10"
 numpy = "^1.22.4"
 scipy = "^1.8.1"
 sympy = "^1.10.1"
@@ -25,7 +25,8 @@ jupyter = "^1.0.0"
 ipykernel = "^6.13.1"
 jupytext = "^1.13.8"
 stim = "^1.9.0"
-networkx = "^2.8.8"
+qec-util = { git = "https://github.com/BorisVarbanov/qec-util.git", branch = "develop" }
+
 
 [tool.poetry.dev-dependencies]
 pytest-cov = "^3.0.0"
