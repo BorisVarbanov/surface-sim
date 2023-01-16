@@ -1,7 +1,7 @@
 """Main surface-sim module."""
 __version__ = "0.1.0"
 
-from . import circuits, experiments, models
+from . import circuits, experiments, models, util
 from .layouts import Layout
 from .setup import Setup
 
@@ -13,4 +13,5 @@ __all__ = [
     "models",
     "circuits",
     "experiments",
+    "util",
 ]
