@@ -1,8 +1,8 @@
 from typing import Iterable, Iterator, List, Tuple
 
+from qec_util import Layout
 from stim import CircuitInstruction
 
-from ..layouts import Layout
 from ..setup import Setup
 from .model import Model
 
