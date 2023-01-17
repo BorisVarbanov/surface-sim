@@ -2,11 +2,9 @@
 __version__ = "0.1.0"
 
 from . import circuits, experiments, models, util
-from .layouts import Layout
 from .setup import Setup
 
 __all__ = [
-    "Layout",
     "Circuit",
     "Setup",
     "Model",
