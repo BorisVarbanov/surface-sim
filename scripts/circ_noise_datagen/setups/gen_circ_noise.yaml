@@ -1,0 +1,148 @@
+version: "1"
+name: "Circuit-level noise setup"
+description: "Setup for a circuit-level noise model that can be used for any distance."
+
+error_prob: &prob 0.001
+
+setup:
+  - qubit: D1
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D2
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D3
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D4
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D5
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D6
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D7
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D8
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: D9
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: X1
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: X2
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: X3
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: X4
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: Z1
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: Z2
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: Z3
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+  - qubit: Z4
+    sq_error_prob: *prob
+    meas_error_prob: *prob
+    reset_error_prob: *prob
+    idle_error_prob: *prob
+
+  - qubits: [D1, X1]
+    cz_error_prob: *prob
+  - qubits: [D2, X1]
+    cz_error_prob: *prob
+
+  - qubits: [D2, X2]
+    cz_error_prob: *prob
+  - qubits: [D3, X2]
+    cz_error_prob: *prob
+  - qubits: [X2, D6]
+    cz_error_prob: *prob
+  - qubits: [X2, D5]
+    cz_error_prob: *prob
+
+  - qubits: [X3, D5]
+    cz_error_prob: *prob
+  - qubits: [X3, D4]
+    cz_error_prob: *prob
+  - qubits: [D8, X3]
+    cz_error_prob: *prob
+  - qubits: [D7, X3]
+    cz_error_prob: *prob
+
+  - qubits: [D8, X4]
+    cz_error_prob: *prob
+  - qubits: [D9, X4]
+    cz_error_prob: *prob
+
+  - qubits: [D1, Z1]
+    cz_error_prob: *prob
+  - qubits: [D2, Z1]
+    cz_error_prob: *prob
+  - qubits: [Z1, D5]
+    cz_error_prob: *prob
+  - qubits: [Z1, D4]
+    cz_error_prob: *prob
+
+  - qubits: [D3, Z2]
+    cz_error_prob: *prob
+  - qubits: [Z2, D6]
+    cz_error_prob: *prob
+
+  - qubits: [D7, Z3]
+    cz_error_prob: *prob
+  - qubits: [Z3, D4]
+    cz_error_prob: *prob
+
+  - qubits: [D9, Z4]
+    cz_error_prob: *prob
+  - qubits: [D8, Z4]
+    cz_error_prob: *prob
+  - qubits: [Z4, D6]
+    cz_error_prob: *prob
+  - qubits: [Z4, D5]
+    cz_error_prob: *prob
