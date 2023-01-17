@@ -1,5 +1,6 @@
-from collections import defaultdict
-from typing import Dict, Type, TypeVar
+from copy import deepcopy
+from pathlib import Path
+from typing import Any, Dict, Type, TypeVar, Union
 
 import yaml
 
@@ -7,15 +8,14 @@ T = TypeVar("T", bound="Setup")
 
 
 class Setup:
-    def __init__(self, setup_dict: Dict):
+    def __init__(self, setup: Dict[str, Any]) -> None:
         self._qubits = {}
-        self._gates = defaultdict(dict)
 
-        self._name = setup_dict.get("name")
-        self._description = setup_dict.get("description")
-        self._load_setup(setup_dict)
+        self.name = setup.get("name")
+        self.description = setup.get("description")
+        self._load_setup(setup)
 
-    def _load_setup(self, setup):
+    def _load_setup(self, setup: Dict[str, Any]) -> None:
         params = setup.get("setup")
         if not params:
             raise ValueError("setup not found or contains no information")
@@ -30,7 +30,7 @@ class Setup:
             self._qubits[qubits] = params_dict
 
     @classmethod
-    def from_yaml(cls: Type[T], filename: str) -> T:
+    def from_yaml(cls: Type[T], filename: Union[str, Path]) -> T:
         """
         from_yaml Create new surface_sim.setup.Setup instance from YAML configuarion file.
 
@@ -48,13 +48,38 @@ class Setup:
             setup = yaml.safe_load(file)
             return cls(setup)
 
-    def set_param(self, param, param_val, *qubits):
+    def to_dict(self) -> Dict[str, Any]:
+        setup = dict()
+
+        setup["name"] = self.name
+        setup["version"] = "1"
+        setup["description"] = self.description
+
+        qubit_params = []
+        for qubits, params in self._qubits.items():
+            params_copy = deepcopy(params)
+            num_qubits = len(qubits)
+            if num_qubits == 1:
+                params_copy["qubit"] = qubits[0]
+            elif num_qubits == 2:
+                params_copy["qubits"] = list(qubits)
+            qubit_params.append(params_copy)
+        setup["setup"] = qubit_params
+
+        return setup
+
+    def to_yaml(self, filename: Union[str, Path]) -> None:
+        setup = self.to_dict()
+        with open(filename, "w") as file:
+            yaml.dump(setup, file, default_flow_style=False)
+
+    def set_param(self, param: str, param_val: float, *qubits: str) -> None:
         if qubits:
             self._qubits[qubits][param] = param_val
         else:
             self._qubits[tuple()][param] = param_val
 
-    def param(self, param, *qubits):
+    def param(self, param: str, *qubits: str) -> float:
         try:
             return self._qubits[qubits][param]
         except KeyError:

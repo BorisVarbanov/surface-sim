@@ -1,6 +1,7 @@
 from typing import Any
 
-from ..layouts import Layout
+from qec_util import Layout
+
 from ..setup import Setup
 
 
