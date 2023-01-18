@@ -30,13 +30,13 @@ def sample_experiment(
     anc_outcomes = anc_outcomes.reshape(num_shots, num_rounds, num_anc)
 
     anc_meas = DataArray(
-        data=anc_outcomes.astype(int),
+        data=anc_outcomes.astype(bool),
         dims=["shot", "qec_round", "anc_qubit"],
         coords=dict(shot=shots, qec_round=qec_rounds, anc_qubit=anc_qubits),
     )
 
     data_meas = DataArray(
-        data=data_outcomes.astype(int),
+        data=data_outcomes.astype(bool),
         dims=["shot", "data_qubit"],
         coords=dict(shot=shots, data_qubit=data_qubits),
     )
