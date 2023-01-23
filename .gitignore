@@ -140,3 +140,11 @@ dmypy.json
 # VScode settings
 .vscode
 vscode/
+
+
+# Stim files
+*.stim
+*.dem
+
+# MacOS DS_Store
+.DS_Store
