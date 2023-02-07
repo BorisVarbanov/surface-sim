@@ -1,6 +1,6 @@
 from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, Type, TypeVar, Union
+from typing import Any, Dict, Type, TypeVar, Union, List
 
 import yaml
 
@@ -10,9 +10,11 @@ T = TypeVar("T", bound="Setup")
 class Setup:
     def __init__(self, setup: Dict[str, Any]) -> None:
         self._qubits = {}
+        self._var_params = {}
 
         self.name = setup.get("name")
         self.description = setup.get("description")
+
         self._load_setup(setup)
 
     def _load_setup(self, setup: Dict[str, Any]) -> None:
@@ -28,6 +30,18 @@ class Setup:
             if qubits in self._qubits.keys():
                 raise ValueError("Parameters defined repeatedly in the setup.")
             self._qubits[qubits] = params_dict
+
+            for param, val in params_dict.items():
+                if isinstance(val, str) and param not in self._var_params:
+                    self._var_params[val] = None
+
+    @property
+    def free_params(self) -> List[str]:
+        return [param for param, val in self._var_params.items() if val is None]
+
+    @property
+    def var_params(self) -> Dict[str, Any]:
+        return self._var_params
 
     @classmethod
     def from_yaml(cls: Type[T], filename: Union[str, Path]) -> T:
@@ -73,25 +87,25 @@ class Setup:
         with open(filename, "w") as file:
             yaml.dump(setup, file, default_flow_style=False)
 
+    def set_var_param(self, var: str, var_val: float) -> None:
+        try:
+            self._var_params[var] = var_val
+        except KeyError:
+            raise ValueError(f"var {var} not in setup.var_params.")
+
     def set_param(self, param: str, param_val: float, *qubits: str) -> None:
-        if qubits:
-            self._qubits[qubits][param] = param_val
-        else:
-            self._qubits[tuple()][param] = param_val
+        val = self._qubits[qubits][param]
+        if isinstance(val, str):
+            raise ValueError("")
+        self._qubits[qubits][param] = param_val
 
     def param(self, param: str, *qubits: str) -> float:
         try:
-            return self._qubits[qubits][param]
+            val = self._qubits[qubits][param]
         except KeyError:
-            pass
-
-        try:
-            return self._qubits[tuple()][param]
-        except KeyError:
-            pass
-
-        raise KeyError(
-            'Parameter "{}" is not defined for qubit(s) {}'.format(
-                param, ", ".join(qubits)
-            )
-        )
+            qubit_str = ", ".join(qubits)
+            raise KeyError(f"Parameter {param} not defined for qubit(s) {qubit_str}")
+        else:
+            if isinstance(val, str):
+                return self._var_params[val]
+            return val
