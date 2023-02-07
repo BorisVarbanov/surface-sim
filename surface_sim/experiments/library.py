@@ -37,7 +37,9 @@ def memory_exp(
         return experiment
 
     experiment = (
-        init_circ + first_qec_circ * min(num_rounds, num_init_rounds) + meas_circuit
+        init_circ
+        + first_qec_circ * min(num_rounds, num_init_rounds)
+        + log_meas(model, rot_basis, meas_reset=1)
     )
 
     return experiment
