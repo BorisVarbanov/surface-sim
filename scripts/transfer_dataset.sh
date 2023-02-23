@@ -2,7 +2,7 @@
 
 username="bmvarbanov"
 dataset="20230214-d3_rot-surf_circ-level_p0.001"
-to_scrath=false
+to_scrath=true
 
 
 
@@ -15,7 +15,6 @@ else
     destination_dir="/tudelft.net/staff-umbrella/qrennd/data/"
 fi
 
-script_dir=$PWD
-source_dir="${script_dir}/${dataset}"
+source_dir="$HOME/data/${dataset}"
 
 rsync -avzh --exclude "*.ipynb" --progress --stats --no-perms "${source_dir}" "${username}@${host}:${destination_dir}"
