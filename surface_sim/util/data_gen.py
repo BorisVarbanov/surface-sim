@@ -75,3 +75,11 @@ def sample_experiment(
     )
 
     return dataset
+
+
+def binary_to_int(x: np.ndarray) -> int:
+    return np.sum(2 ** np.arange(len(x))[::-1] * x)
+
+
+def int_to_binary(x: int, bits: int) -> np.ndarray:
+    return np.array(list(map(int, bin(x)[2:].zfill(bits))))
