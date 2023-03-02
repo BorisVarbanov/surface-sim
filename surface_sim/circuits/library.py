@@ -191,11 +191,19 @@ def init_qubits(model: Model, data_init: int, rot_basis: bool = False) -> Circui
         circuit.append("TICK")
 
     flipped_qubits = [qubit for qubit, init in zip(data_qubits, data_init) if init != 0]
-    instructions = (
-        model.z_gate(flipped_qubits) if rot_basis else model.x_gate(flipped_qubits)
-    )
-    for instruction in instructions:
-        circuit.append(instruction)
+    non_flipped_qubits = [
+        qubit for qubit, init in zip(data_qubits, data_init) if init == 0
+    ]
+    if len(flipped_qubits) != 0:
+        instructions = (
+            model.z_gate(flipped_qubits) if rot_basis else model.x_gate(flipped_qubits)
+        )
+        for instruction in instructions:
+            circuit.append(instruction)
+    if len(non_flipped_qubits) != 0:
+        instructions = model.idle(non_flipped_qubits)
+        for instruction in instructions:
+            circuit.append(instruction)
 
     for instruction in model.idle(anc_qubits):
         circuit.append(instruction)
