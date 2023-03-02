@@ -13,15 +13,16 @@ def sample_experiment(
     num_rounds: int,
     seed: Optional[int] = None,
 ) -> Dataset:
-
     anc_qubits = layout.get_qubits(role="anc")
     data_qubits = layout.get_qubits(role="data")
 
     num_anc = len(anc_qubits)
+    num_data = len(data_qubits)
 
     shots = list(range(1, num_shots + 1))
     qec_rounds = list(range(1, num_rounds + 1))
 
+    # generate noisy data
     sampler = experiment.compile_sampler(seed=seed)
     outcome_vec = sampler.sample(num_shots)
 
@@ -41,10 +42,34 @@ def sample_experiment(
         coords=dict(shot=shots, data_qubit=data_qubits),
     )
 
+    # generate ideal data
+    sampler = experiment.without_noise().compile_sampler(seed=seed)
+    outcome_vec = sampler.sample(1)
+
+    outcomes = outcome_vec.reshape(1, -1)
+    ideal_anc_outcomes, ideal_data_outcomes = np.split(
+        outcomes, [num_rounds * num_anc], axis=1
+    )
+    ideal_anc_outcomes = ideal_anc_outcomes.reshape(num_rounds, num_anc)
+    ideal_data_outcomes = ideal_data_outcomes.reshape(num_data)
+
+    ideal_anc_meas = DataArray(
+        data=ideal_anc_outcomes.astype(bool),
+        dims=["qec_round", "anc_qubit"],
+        coords=dict(qec_round=qec_rounds, anc_qubit=anc_qubits),
+    )
+    ideal_data_meas = DataArray(
+        data=ideal_data_outcomes.astype(bool),
+        dims=["data_qubit"],
+        coords=dict(data_qubit=data_qubits),
+    )
+
     dataset = Dataset(
         data_vars=dict(
             anc_meas=anc_meas,
             data_meas=data_meas,
+            ideal_data_meas=ideal_data_meas,
+            ideal_anc_meas=ideal_anc_meas,
         ),
         coords=dict(seed=seed),
     )

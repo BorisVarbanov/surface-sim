@@ -165,7 +165,7 @@ def qec_round(
     return circuit
 
 
-def init_qubits(model: Model, log_state: int, rot_basis: bool = False) -> Circuit:
+def init_qubits(model: Model, data_init: int, rot_basis: bool = False) -> Circuit:
     """
     Returns stim circuit corresponding to a logical initialization
     of the given model.
@@ -190,17 +190,18 @@ def init_qubits(model: Model, log_state: int, rot_basis: bool = False) -> Circui
 
         circuit.append("TICK")
 
-    if log_state:
-        instructions = (
-            model.z_gate(data_qubits) if rot_basis else model.x_gate(data_qubits)
-        )
-        for instruction in instructions:
-            circuit.append(instruction)
+    flipped_qubits = [qubit for qubit, init in zip(data_qubits, data_init) if init != 0]
+    instructions = (
+        model.z_gate(flipped_qubits) if rot_basis else model.x_gate(flipped_qubits)
+    )
+    for instruction in instructions:
+        circuit.append(instruction)
 
-        for instruction in model.idle(anc_qubits):
-            circuit.append(instruction)
+    for instruction in model.idle(anc_qubits):
+        circuit.append(instruction)
 
-        circuit.append("TICK")
+    circuit.append("TICK")
+
     return circuit
 
 
