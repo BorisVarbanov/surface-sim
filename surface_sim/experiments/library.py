@@ -1,3 +1,5 @@
+import numpy as np
+
 from stim import Circuit
 
 from ..circuits import init_qubits, log_meas, qec_round
@@ -7,7 +9,7 @@ from ..models import Model
 def memory_exp(
     model: Model,
     num_rounds: int,
-    log_state: int,
+    data_init: np.ndarray,
     rot_basis: bool = False,
     meas_reset: bool = False,
 ) -> Circuit:
@@ -19,7 +21,7 @@ def memory_exp(
 
     num_init_rounds = 1 if meas_reset else 2
 
-    init_circ = init_qubits(model, log_state, rot_basis)
+    init_circ = init_qubits(model, data_init, rot_basis)
     meas_circuit = log_meas(model, rot_basis, meas_reset)
 
     first_qec_circ = qec_round(model, meas_reset, meas_comparison=False)

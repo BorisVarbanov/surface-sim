@@ -9,13 +9,14 @@ T = TypeVar("T", bound="Setup")
 
 class Setup:
     def __init__(self, setup: Dict[str, Any]) -> None:
-        self._qubits = {}
-        self._var_params = {}
+        self._qubit_params = dict()
+        self._global_params = dict()
+        self._var_params = dict()
 
-        self.name = setup.get("name")
-        self.description = setup.get("description")
-
-        self._load_setup(setup)
+        _setup = deepcopy(setup)
+        self.name = _setup.pop("name")
+        self.description = setup.pop("description")
+        self._load_setup(_setup)
 
     def _load_setup(self, setup: Dict[str, Any]) -> None:
         params = setup.get("setup")
@@ -23,13 +24,20 @@ class Setup:
             raise ValueError("setup not found or contains no information")
 
         for params_dict in params:
-            qubits = tuple(params_dict.pop("qubits", tuple()))
-            qubit = str(params_dict.pop("qubit", ""))
-            if qubit:
+            if "qubit" in params_dict:
+                qubit = str(params_dict.pop("qubit"))
                 qubits = (qubit,)
-            if qubits in self._qubits.keys():
-                raise ValueError("Parameters defined repeatedly in the setup.")
-            self._qubits[qubits] = params_dict
+            elif "qubits" in params_dict:
+                qubits = tuple(params_dict.pop("qubits"))
+            else:
+                qubits = None
+
+            if qubits:
+                if qubits in self._qubit_params.keys():
+                    raise ValueError("Parameters defined repeatedly in the setup.")
+                self._qubit_params[qubits] = params_dict
+            else:
+                self._global_params.update(params_dict)
 
             for param, val in params_dict.items():
                 if isinstance(val, str) and param not in self._var_params:
@@ -38,10 +46,6 @@ class Setup:
     @property
     def free_params(self) -> List[str]:
         return [param for param, val in self._var_params.items() if val is None]
-
-    @property
-    def var_params(self) -> Dict[str, Any]:
-        return self._var_params
 
     @classmethod
     def from_yaml(cls: Type[T], filename: Union[str, Path]) -> T:
@@ -66,11 +70,13 @@ class Setup:
         setup = dict()
 
         setup["name"] = self.name
-        setup["version"] = "1"
         setup["description"] = self.description
 
         qubit_params = []
-        for qubits, params in self._qubits.items():
+        if self._global_params:
+            qubit_params.append(self._global_params)
+
+        for qubits, params in self._qubit_params.items():
             params_copy = deepcopy(params)
             num_qubits = len(qubits)
             if num_qubits == 1:
@@ -78,34 +84,55 @@ class Setup:
             elif num_qubits == 2:
                 params_copy["qubits"] = list(qubits)
             qubit_params.append(params_copy)
+
         setup["setup"] = qubit_params
 
         return setup
 
     def to_yaml(self, filename: Union[str, Path]) -> None:
         setup = self.to_dict()
+
         with open(filename, "w") as file:
             yaml.dump(setup, file, default_flow_style=False)
 
-    def set_var_param(self, var: str, var_val: float) -> None:
+    def var_param(self, var_param: str) -> float:
         try:
-            self._var_params[var] = var_val
+            return self._var_params[var_param]
         except KeyError:
-            raise ValueError(f"var {var} not in setup.var_params.")
+            raise ValueError(f"Variable param {var_param} not in setup.var_params.")
+
+    def set_var_param(self, var_param: str, val: float) -> None:
+        try:
+            self._var_params[var_param] = val
+        except KeyError:
+            raise ValueError(f"Variable param {var_param} not in setup.")
 
     def set_param(self, param: str, param_val: float, *qubits: str) -> None:
-        val = self._qubits[qubits][param]
-        if isinstance(val, str):
-            raise ValueError("")
-        self._qubits[qubits][param] = param_val
+        if not qubits:
+            self._global_params[param] = param_val
+        else:
+            self._qubit_params[qubits][param] = param_val
 
     def param(self, param: str, *qubits: str) -> float:
         try:
-            val = self._qubits[qubits][param]
+            val = self._qubit_params[qubits][param]
+            return self._eval_param_val(val)
         except KeyError:
+            pass
+
+        try:
+            val = self._global_params[param]
+            return self._eval_param_val(val)
+        except KeyError:
+            pass
+
+        if qubits:
             qubit_str = ", ".join(qubits)
             raise KeyError(f"Parameter {param} not defined for qubit(s) {qubit_str}")
-        else:
-            if isinstance(val, str):
-                return self._var_params[val]
+        raise KeyError(f"Global parameter {param} not defined")
+
+    def _eval_param_val(self, val):
+        try:
+            return self._var_params[val]
+        except KeyError:
             return val
