@@ -136,9 +136,15 @@ dmypy.json
 # Datasets
 *.nc
 
-# Jupyter notebooks (should be converted to py files)
-*.ipynb
 
 # VScode settings
 .vscode
 vscode/
+
+
+# Stim files
+*.stim
+*.dem
+
+# MacOS DS_Store
+.DS_Store
