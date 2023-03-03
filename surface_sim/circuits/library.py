@@ -1,4 +1,4 @@
-from itertools import chain
+from itertools import chain, compress
 
 from stim import Circuit, target_rec
 
@@ -181,6 +181,21 @@ def init_qubits(model: Model, data_init: int, rot_basis: bool = False) -> Circui
         circuit.append(instruction)
     circuit.append("TICK")
 
+    flipped_qubits = list(compress(data_qubits, data_init))
+
+    if flipped_qubits:
+        instructions = model.x_gate(flipped_qubits)
+        for instruction in instructions:
+            circuit.append(instruction)
+
+    data_set = set(data_qubits)
+    idle_qubits = list(data_set.difference(flipped_qubits))
+
+    for instruction in model.idle(anc_qubits + idle_qubits):
+        circuit.append(instruction)
+
+    circuit.append("TICK")
+
     if rot_basis:
         for instruction in model.hadamard(data_qubits):
             circuit.append(instruction)
@@ -189,26 +204,6 @@ def init_qubits(model: Model, data_init: int, rot_basis: bool = False) -> Circui
             circuit.append(instruction)
 
         circuit.append("TICK")
-
-    flipped_qubits = [qubit for qubit, init in zip(data_qubits, data_init) if init != 0]
-    non_flipped_qubits = [
-        qubit for qubit, init in zip(data_qubits, data_init) if init == 0
-    ]
-    if len(flipped_qubits) != 0:
-        instructions = (
-            model.z_gate(flipped_qubits) if rot_basis else model.x_gate(flipped_qubits)
-        )
-        for instruction in instructions:
-            circuit.append(instruction)
-    if len(non_flipped_qubits) != 0:
-        instructions = model.idle(non_flipped_qubits)
-        for instruction in instructions:
-            circuit.append(instruction)
-
-    for instruction in model.idle(anc_qubits):
-        circuit.append(instruction)
-
-    circuit.append("TICK")
 
     return circuit
 
