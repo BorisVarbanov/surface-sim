@@ -1,11 +1,9 @@
-version: "1"
 name: "Circuit-level noise setup"
 description: "Setup for a circuit-level noise model that can be used for any distance."
 
 error_prob: &prob "prob"
 
 setup:
-  # Error probabilities
   - sq_error_prob: *prob
     cz_error_prob: *prob
     meas_error_prob: *prob
