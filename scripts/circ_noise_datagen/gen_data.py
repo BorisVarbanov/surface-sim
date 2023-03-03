@@ -1,8 +1,10 @@
 # %%
 import pathlib
 from typing import List, Union
+from itertools import repeat
 
 import numpy as np
+import xarray as xr
 from matplotlib import pyplot as plt
 from qec_util.layouts import Layout, plot, set_coords
 
@@ -40,13 +42,18 @@ DATASET_TYPE: str = "test"  # Possible types are "train", "dev" and "test"
 
 # Fixed parameters
 ROOT_SEED: Union[int, None] = np.random.randint(999999)  # Initial seed for the RNG
-LIST_NUM_ROUNDS: List[int] = list(range(1, 3 + 1, 2))  # Number of rounds
-NUM_SHOTS: int = 100  # Number of shots
+LIST_NUM_ROUNDS: List[int] = list(range(1, 21, 2))  # Number of rounds
+NUM_SHOTS: int = 20000  # Number of shots
 ROT_BASIS: bool = False  # In the z-basis
 MEAS_RESET: bool = False  # No resets following measurements
 
 # Variable parameters
-LOG_STATES: List[int] = [0, 1]  # Logical state(s)
+data_qubits = layout.get_qubits(role="data")
+num_data_qubits = len(data_qubits)
+
+DATA_INITS: List[List[int]] = [
+    list(repeat(state, num_data_qubits)) for state in (0, 1)
+]  # Logical state(s)
 DEPOL_PROBS: List[float] = [1e-2]
 
 # %%
@@ -59,7 +66,6 @@ global_seeds = iter(root_seed_sequence.generate_state(num_runs, dtype="uint64"))
 
 distance = layout.distance
 basis = "X" if ROT_BASIS else "Z"
-num_states = len(LOG_STATES)
 
 for prob in DEPOL_PROBS:
     model.setup.set_var_param("prob", prob)
@@ -67,11 +73,13 @@ for prob in DEPOL_PROBS:
     for num_rounds in LIST_NUM_ROUNDS:
         print(num_rounds, end="\r")
 
+        num_experiments = len(DATA_INITS)
         seed_sequence = np.random.SeedSequence(next(global_seeds))
-        seeds = iter(seed_sequence.generate_state(num_states, dtype="uint64"))
+        seeds = iter(seed_sequence.generate_state(num_experiments, dtype="uint64"))
 
-        for log_state in LOG_STATES:
-            exp_name = f"surf-code_d{distance}_b{basis}_s{log_state}_n{NUM_SHOTS}_r{num_rounds}_p{prob:.3f}"
+        for data_init in DATA_INITS:
+            init_str = "".join(map(str, data_init))
+            exp_name = f"surf-code_d{layout.distance}_b{basis}_s{init_str}_n{NUM_SHOTS}_r{num_rounds}"
 
             exp_folder = EXP_DIR / DATASET_TYPE / exp_name
             exp_folder.mkdir(parents=True, exist_ok=True)
@@ -79,7 +87,7 @@ for prob in DEPOL_PROBS:
             experiment = memory_exp(
                 model=model,
                 num_rounds=num_rounds,
-                log_state=log_state,
+                data_init=data_init,
                 rot_basis=ROT_BASIS,
                 meas_reset=MEAS_RESET,
             )
@@ -96,13 +104,14 @@ for prob in DEPOL_PROBS:
             )
 
             # assign these as coordinate for merging datasets later on. Add here any otther relevant parameters
-            dataset = dataset.assign_coords(
-                log_state=log_state,
-                rot_basis=int(ROT_BASIS),
-                meas_reset=int(MEAS_RESET),
-                error_prob=prob,
+            dataset["data_init"] = xr.DataArray(
+                np.array(data_init, dtype=bool), dims=["data_qubit"]
             )
-            dataset.attrs["seed"] = int(seed)
+            dataset = dataset.assign_coords(
+                rot_basis=ROT_BASIS,
+                meas_reset=MEAS_RESET,
+            )
+            dataset.assign_attrs(seed=seed)
             dataset.to_netcdf(exp_folder / "measurements.nc")
 
             error_model = experiment.detector_error_model(
