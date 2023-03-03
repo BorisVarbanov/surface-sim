@@ -126,8 +126,8 @@ class BiasedCircuitNoiseModel(Model):
                 biased_factor=self.param("biased_factor", qubit),
                 num_qubits=1,
             )
-            prob = prob * r
-            yield CircuitInstruction("PAULI_CHANNEL_1", [ind], [prob])
+            probs = prob * r
+            yield CircuitInstruction("PAULI_CHANNEL_1", [ind], probs)
 
     def z_gate(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
         inds = self.layout.get_inds(qubits)
@@ -141,7 +141,7 @@ class BiasedCircuitNoiseModel(Model):
                 biased_factor=self.param("biased_factor", qubit),
                 num_qubits=1,
             )
-            prob = prob * r
+            probs = prob * r
             yield CircuitInstruction("PAULI_CHANNEL_1", [ind], probs)
 
     def hadamard(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
@@ -156,7 +156,7 @@ class BiasedCircuitNoiseModel(Model):
                 biased_factor=self.param("biased_factor", qubit),
                 num_qubits=1,
             )
-            prob = prob * r
+            probs = prob * r
             yield CircuitInstruction("PAULI_CHANNEL_1", [ind], probs)
 
     def cphase(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
@@ -174,7 +174,7 @@ class BiasedCircuitNoiseModel(Model):
                 biased_factor=self.param("biased_factor", *qubit_pair),
                 num_qubits=2,
             )
-            prob = prob * r
+            probs = prob * r
             yield CircuitInstruction("PAULI_CHANNEL_2", ind_pair, probs)
 
     def measure(self, qubits: List[str]) -> Iterator[CircuitInstruction]:
@@ -205,4 +205,4 @@ class BiasedCircuitNoiseModel(Model):
                 num_qubits=1,
             )
             prob = prob * r
-            yield CircuitInstruction("PAULI_CHANNEL_1", [ind], probs)
+            yield CircuitInstruction("PAULI_CHANNEL_1", [ind], prob)

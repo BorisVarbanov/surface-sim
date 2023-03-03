@@ -1,4 +1,3 @@
-version: "1"
 name: "Biased circuit-level noise setup"
 description: "Setup for a biased circuit-level noise model that can be used for any distance."
 
@@ -12,5 +11,5 @@ setup:
     meas_error_prob: *prob
     reset_error_prob: *prob
     idle_error_prob: *prob
-    bias_factor: *bias
-    bias_pauli: *pauli
+    biased_factor: *bias
+    biased_pauli: *pauli
