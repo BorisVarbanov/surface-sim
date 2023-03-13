@@ -42,22 +42,23 @@ def log_meas(
 
     circuit.append("TICK")
 
-    n_data, n_anc = len(data_qubits), len(anc_qubits)
-    proj_mat = model.layout.projection_matrix(
-        stab_type="x_type" if rot_basis else "z_type"
-    )
-    for anc in proj_mat.coords["anc_qubit"]:
-        targets_meas = []
-        for idx_data, data in enumerate(data_qubits):
-            if proj_mat.sel(anc_qubit=anc, data_qubit=data) != 0:
-                targets_meas.append(-n_data + idx_data)
-        idx_anc = anc_qubits.index(anc)
-        for ind in range(1, comp_rounds + 1):
-            targets_meas.append(-n_data - (ind * n_anc) + idx_anc)
-        circuit.append("DETECTOR", [target_rec(targ) for targ in targets_meas])
+    num_data, num_anc = len(data_qubits), len(anc_qubits)
+    stab_type = "x_type" if rot_basis else "z_type"
+    stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
 
-    targets_meas = [-n_data + idx_data for idx_data in range(n_data)]
-    circuit.append("OBSERVABLE_INCLUDE", [target_rec(targ) for targ in targets_meas], 0)
+    for anc_qubit in stab_qubits:
+        neighbors = model.layout.get_neighbors(anc_qubit)
+        neighbor_inds = model.layout.get_inds(neighbors)
+        targets = [target_rec(ind - num_data) for ind in neighbor_inds]
+
+        anc_ind = anc_qubits.index(anc_qubit)
+        for round_ind in range(1, comp_rounds + 1):
+            target = target_rec(anc_ind - num_data - round_ind * num_anc)
+            targets.append(target)
+        circuit.append("DETECTOR", targets)
+
+    targets = [target_rec(ind) for ind in range(-num_data, 0)]
+    circuit.append("OBSERVABLE_INCLUDE", targets, 0)
 
     return circuit
 
@@ -83,7 +84,7 @@ def qec_round(
 
     # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
-    comp_rounds = 1 if meas_reset else 2
+    comp_round = 1 if meas_reset else 2
 
     qubits = data_qubits + anc_qubits
 
@@ -152,15 +153,18 @@ def qec_round(
         circuit.append("TICK")
 
     # detectors ordered as in the measurements
-    n_anc = len(anc_qubits)
+    num_anc = len(anc_qubits)
     if meas_comparison:
-        targets_meas = [
-            [-(comp_rounds + 1) * n_anc + idx, -n_anc + idx] for idx in range(n_anc)
-        ]
+        det_targets = []
+        for ind in range(num_anc):
+            target_inds = [ind - (comp_round + 1) * num_anc, ind - num_anc]
+            targets = [target_rec(ind) for ind in target_inds]
+            det_targets.append(targets)
     else:
-        targets_meas = [[-n_anc + idx] for idx in range(n_anc)]
-    for targs in targets_meas:
-        circuit.append("DETECTOR", [target_rec(targ) for targ in targs])
+        det_targets = [[target_rec(ind - num_anc)] for ind in range(num_anc)]
+
+    for targets in det_targets:
+        circuit.append("DETECTOR", targets)
 
     return circuit
 
