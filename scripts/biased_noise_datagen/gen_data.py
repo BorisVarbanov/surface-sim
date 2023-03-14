@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from qec_util.layouts import Layout, plot, set_coords
 
 from surface_sim import Setup
-from surface_sim.experiments import memory_exp
+from surface_sim.experiments.css_code import memory_exp
 from surface_sim.models import BiasedCircuitNoiseModel
 from surface_sim.util import sample_experiment
 
