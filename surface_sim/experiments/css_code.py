@@ -1,12 +1,11 @@
 import numpy as np
-
 from stim import Circuit
 
-from ..circuits import init_qubits, log_meas, qec_round
+from ..circuits.css_code import init_qubits, log_meas, qec_round
 from ..models import Model
 
 
-def memory_exp(
+def memory_experiment(
     model: Model,
     num_rounds: int,
     data_init: np.ndarray,
