@@ -107,12 +107,12 @@ def qec_round(
         for direction in ("north_west", "south_east"):
             neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
             rot_qubits.update(neighbors)
-        idle_qubits = qubits - rot_qubits
 
         if not ind:
             for instruction in model.hadamard(rot_qubits):
                 circuit.append(instruction)
 
+            idle_qubits = qubits - rot_qubits
             for instruction in model.idle(idle_qubits):
                 circuit.append(instruction)
             circuit.append("TICK")
