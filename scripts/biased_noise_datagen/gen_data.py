@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from qec_util.layouts import Layout, plot, set_coords
 
 from surface_sim import Setup
-from surface_sim.experiments.css_code import memory_exp
+from surface_sim.experiments.css_code import memory_experiment
 from surface_sim.models import BiasedCircuitNoiseModel
 from surface_sim.util import sample_experiment
 
@@ -84,7 +84,7 @@ for num_rounds in LIST_NUM_ROUNDS:
         exp_folder = EXP_DIR / DATASET_TYPE / exp_name
         exp_folder.mkdir(parents=True, exist_ok=True)
 
-        experiment = memory_exp(
+        experiment = memory_experiment(
             model=model,
             num_rounds=num_rounds,
             data_init=data_init,
