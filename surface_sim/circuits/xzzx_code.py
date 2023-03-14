@@ -20,7 +20,7 @@ def log_meas(
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
 
-    data_set = set(data_qubits)
+    qubits = set(data_qubits + anc_qubits)
 
     # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
@@ -36,13 +36,12 @@ def log_meas(
         neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
         rot_qubits.update(neighbors)
 
-    idle_qubits = list(data_set - rot_qubits)
-    rot_qubits = list(rot_qubits)
-
     for instruction in model.hadamard(rot_qubits):
         circuit.append(instruction)
 
-    for instruction in model.idle(anc_qubits + idle_qubits):
+    idle_qubits = qubits - rot_qubits
+
+    for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
 
@@ -91,31 +90,34 @@ def qec_round(
     data_qubits = model.layout.get_qubits(role="data")
     anc_qubits = model.layout.get_qubits(role="anc")
 
+    qubits = set(data_qubits + anc_qubits)
+
     # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
     comp_round = 1 if meas_reset else 2
 
-    qubits = data_qubits + anc_qubits
-
     circuit = Circuit()
+    int_order = model.layout.interaction_order
+    stab_types = list(int_order.keys())
 
-    for stab_type, gate_order in model.layout.interaction_order.items():
+    for ind, stab_type in enumerate(stab_types):
         stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
 
-        if stab_type == "x_type":
-            rot_qubits = data_qubits + stab_qubits
+        rot_qubits = set(stab_qubits)
+        for direction in ("north_west", "south_east"):
+            neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
+            rot_qubits.update(neighbors)
+        idle_qubits = qubits - rot_qubits
 
+        if not ind:
             for instruction in model.hadamard(rot_qubits):
                 circuit.append(instruction)
 
-            idling_qubits = [
-                qubit for qubit in qubits if qubit not in rot_qubits
-            ]  # Should be done by set.difference, but qubit order gets messed up
-            for instruction in model.idle(idling_qubits):
+            for instruction in model.idle(idle_qubits):
                 circuit.append(instruction)
             circuit.append("TICK")
 
-        for ord_dir in gate_order:
+        for ord_dir in int_order[stab_type]:
             int_pairs = model.layout.get_neighbors(
                 stab_qubits, direction=ord_dir, as_pairs=True
             )
@@ -124,26 +126,22 @@ def qec_round(
             for instruction in model.cphase(int_qubits):
                 circuit.append(instruction)
 
-            idling_qubits = [
-                qubit for qubit in qubits if qubit not in int_qubits
-            ]  # Should be done by set.difference, but qubit order gets messed up
-            for instruction in model.idle(idling_qubits):
+            idle_qubits = qubits - set(int_qubits)
+            for instruction in model.idle(idle_qubits):
                 circuit.append(instruction)
             circuit.append("TICK")
 
-        if stab_type == "x_type":
-            rot_qubits = data_qubits + anc_qubits
+        if not ind:
+            for instruction in model.hadamard(qubits):
+                circuit.append(instruction)
         else:
-            rot_qubits = stab_qubits
+            for instruction in model.hadamard(rot_qubits):
+                circuit.append(instruction)
 
-        for instruction in model.hadamard(rot_qubits):
-            circuit.append(instruction)
+            idle_qubits = qubits - rot_qubits
+            for instruction in model.idle(idle_qubits):
+                circuit.append(instruction)
 
-        idling_qubits = [
-            qubit for qubit in qubits if qubit not in rot_qubits
-        ]  # Should be done by set.difference, but qubit order gets messed up
-        for instruction in model.idle(idling_qubits):
-            circuit.append(instruction)
         circuit.append("TICK")
 
     for instruction in model.measure(anc_qubits):
@@ -156,6 +154,7 @@ def qec_round(
     if meas_reset:
         for instruction in model.reset(anc_qubits):
             circuit.append(instruction)
+
         for instruction in model.idle(data_qubits):
             circuit.append(instruction)
 
@@ -188,21 +187,20 @@ def init_qubits(model: Model, data_init: List[int], rot_basis: bool = False) -> 
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
 
-    data_set = set(data_qubits)
+    qubits = set(data_qubits + anc_qubits)
 
     circuit = Circuit()
-    for instruction in model.reset(data_qubits + anc_qubits):
+    for instruction in model.reset(qubits):
         circuit.append(instruction)
     circuit.append("TICK")
 
-    exc_qubits = list(compress(data_qubits, data_init))
+    exc_qubits = set(compress(data_qubits, data_init))
     if exc_qubits:
         for instruction in model.x_gate(exc_qubits):
             circuit.append(instruction)
 
-    idle_qubits = list(data_set - set(exc_qubits))
-
-    for instruction in model.idle(anc_qubits + idle_qubits):
+    idle_qubits = qubits - exc_qubits
+    for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
 
@@ -214,13 +212,12 @@ def init_qubits(model: Model, data_init: List[int], rot_basis: bool = False) -> 
         neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
         rot_qubits.update(neighbors)
 
-    idle_qubits = list(data_set - rot_qubits)
-    rot_qubits = list(rot_qubits)
-
     for instruction in model.hadamard(rot_qubits):
         circuit.append(instruction)
 
-    for instruction in model.idle(anc_qubits + idle_qubits):
+    idle_qubits = qubits - rot_qubits
+
+    for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
 
