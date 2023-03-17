@@ -2,8 +2,8 @@ name: "Biased circuit-level noise setup"
 description: "Setup for a biased circuit-level noise model that can be used for any distance."
 
 error_prob: &prob "prob"
-bias_factor: &bias "bias_factor"
-bias_pauli: &pauli "bias_pauli" 
+bias: &bias "bias"
+bias_pauli: &pauli "bias_pauli"
 
 setup:
   - sq_error_prob: *prob
