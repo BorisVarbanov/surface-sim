@@ -16,7 +16,7 @@ def grouper(iterable: Iterable[str], block_size: int) -> Iterator[Tuple[str, ...
     return zip(*args, strict=True)
 
 
-def biased_prefactors(biased_pauli: str, bias_factor: float, num_qubits: int):
+def biased_prefactors(biased_pauli: str, biased_factor: float, num_qubits: int):
     """
     biased_prefactors Return a biased channel prefactors.
 
@@ -27,7 +27,7 @@ def biased_prefactors(biased_pauli: str, bias_factor: float, num_qubits: int):
     ----------
     biased_pauli : str
         The biased Pauli operator, represented as a string
-    bias_factor : float
+    biased_factor : float
         The strength of the bias.
 
         A bias factor of 1 corresponds to a standard depolarizing channel.
@@ -50,8 +50,8 @@ def biased_prefactors(biased_pauli: str, bias_factor: float, num_qubits: int):
     biased_ops = [op for op in operators if biased_pauli in op]
     num_biased = len(biased_ops)
 
-    nonbias_prefactor = 1 / (num_biased * (bias_factor - 1) + num_ops)
-    bias_prefactor = bias_factor * nonbias_prefactor
+    nonbias_prefactor = 1 / (num_biased * (biased_factor - 1) + num_ops)
+    bias_prefactor = biased_factor * nonbias_prefactor
 
     prefactors = []
     for op in operators:
@@ -208,7 +208,7 @@ class BiasedCircuitNoiseModel(Model):
 
     def reset(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         inds = self.layout.get_inds(qubits)
-        yield CircuitInstruction("prefactors", inds)
+        yield CircuitInstruction("R", inds)
 
         for qubit, ind in zip(qubits, inds):
             prob = self.param("reset_error_prob", qubit)
