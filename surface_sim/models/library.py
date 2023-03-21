@@ -113,7 +113,11 @@ class CircuitNoiseModel(Model):
             prob = self.param("meas_error_prob", qubit)
             yield CircuitInstruction("X_ERROR", [ind], [prob])
 
-        yield CircuitInstruction("M", inds)
+            if self.param("assign_error_flag", qubit):
+                prob = self.param("assign_error_prob", qubit)
+                yield CircuitInstruction("MZ", [ind], [prob])
+            else:
+                yield CircuitInstruction("MZ", [ind])
 
     def reset(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         inds = self.layout.get_inds(qubits)
