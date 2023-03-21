@@ -129,10 +129,13 @@ def plot_patches(axis, layout):
 def plot_sq_gate(axis, coords, name: str) -> None:
     y, x = coords
     width = WIDTHS["sq_gate"]
-    half_width = 0.5 * width
-    center = (x - half_width, y - half_width)
+    center = (x - (0.5 * width), (y - 0.5 * width))
     rect = Rectangle(
-        center, width=width, height=width, zorder=ZORDERS["gate"], **SQ_GATE_PARAMS
+        center,
+        width=width,
+        height=width,
+        zorder=ZORDERS["gate"],
+        **SQ_GATE_PARAMS,
     )
     axis.add_patch(rect)
     axis.text(x, y, name, zorder=ZORDERS["label"], **LABEL_PARAMS)
