@@ -43,9 +43,10 @@ DATASET_TYPE: str = "test"  # Possible types are "train", "dev" and "test"
 # Fixed parameters
 ROOT_SEED: Union[int, None] = np.random.randint(999999)  # Initial seed for the RNG
 LIST_NUM_ROUNDS: List[int] = list(range(1, 21, 2))  # Number of rounds
-NUM_SHOTS: int = 20000  # Number of shots
+NUM_SHOTS: int = 1000  # Number of shots
 ROT_BASIS: bool = False  # In the z-basis
 MEAS_RESET: bool = False  # No resets following measurements
+ASSIGN_ERRORS: bool = True  # Add assignement errors
 
 # Variable parameters
 data_qubits = layout.get_qubits(role="data")
@@ -66,6 +67,8 @@ global_seeds = iter(root_seed_sequence.generate_state(num_runs, dtype="uint64"))
 
 distance = layout.distance
 basis = "X" if ROT_BASIS else "Z"
+
+model.setup.set_var_param("assign_errors", ASSIGN_ERRORS)
 
 for prob in DEPOL_PROBS:
     model.setup.set_var_param("prob", prob)
