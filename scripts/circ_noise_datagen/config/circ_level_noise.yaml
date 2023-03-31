@@ -3,6 +3,7 @@ description: "Setup for a circuit-level noise model that can be used for any dis
 
 error_prob: &prob "prob"
 flag_assign_errors: &assign_errors "assign_errors"
+prob_assign_errors: &prob_assign "assign_prob"
 
 setup:
   - sq_error_prob: *prob
@@ -11,4 +12,4 @@ setup:
     reset_error_prob: *prob
     idle_error_prob: *prob
     assign_error_flag: *assign_errors
-    assign_error_prob: *prob
+    assign_error_prob: *prob_assign

@@ -47,6 +47,7 @@ NUM_SHOTS: int = 1000  # Number of shots
 ROT_BASIS: bool = False  # In the z-basis
 MEAS_RESET: bool = False  # No resets following measurements
 ASSIGN_ERRORS: bool = True  # Add assignement errors
+ASSIGN_PROB: float = 0.001  # Assignment error probability
 
 # Variable parameters
 data_qubits = layout.get_qubits(role="data")
@@ -69,6 +70,7 @@ distance = layout.distance
 basis = "X" if ROT_BASIS else "Z"
 
 model.setup.set_var_param("assign_errors", ASSIGN_ERRORS)
+model.setup.set_var_param("assign_prob", ASSIGN_PROB)
 
 for prob in DEPOL_PROBS:
     model.setup.set_var_param("prob", prob)
