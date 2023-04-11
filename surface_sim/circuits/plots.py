@@ -4,7 +4,6 @@ from typing import Optional
 
 from matplotlib import pyplot as plt
 from matplotlib.patches import Circle, Polygon, Rectangle
-
 from qec_util import Layout
 
 RE_FILTER = re.compile("([a-zA-Z]+)([0-9]+)")
@@ -188,8 +187,8 @@ def plot_layer(instruction, layout, axis=None):
             tar_coords = coords[tar_ind]
             plot_cz_gate(axis, ctrl_coords, tar_coords)
     else:
-        if name not in ("H", "M", "R"):
-            raise NotImplementedError("Only 'H', 'M' and 'R' gates are supported.")
+        if name not in ("H", "M", "R", "X"):
+            raise NotImplementedError("Only 'H', 'M', 'X' and 'R' gates are supported.")
         for ind in inds:
             plot_sq_gate(axis, coords[ind], name)
     return fig, ax
