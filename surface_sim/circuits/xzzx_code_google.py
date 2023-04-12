@@ -44,7 +44,7 @@ def qec_round_with_log_meas(
     comp_rounds = 1 if meas_reset else 2
 
     # a-h
-    circuit = coherent_qec_part(model=model, meas_reset=meas_reset)
+    circuit = coherent_qec_part(model=model)
 
     # i (for logical measurement)
     stab_type = "x_type" if rot_basis else "z_type"
@@ -104,16 +104,10 @@ def qec_round_with_log_meas(
     return circuit
 
 
-def coherent_qec_part(model: Model, meas_reset: bool = False) -> Circuit:
+def coherent_qec_part(model: Model) -> Circuit:
     """
-    Returns stim circuit corresponding to a QEC cycle
-    of the given model.
-
-    Params
-    -------
-    stab_type_det
-        If specified, only adds detectors to the ancillas for the
-        specific stabilizator type.
+    Returns stim circuit corresponding to the steps "a" to "h" from the QEC cycle
+    described in Google's paper for the given model.
     """
     data_qubits = model.layout.get_qubits(role="data")
     anc_qubits = model.layout.get_qubits(role="anc")
@@ -260,7 +254,7 @@ def qec_round(
     comp_round = 1 if meas_reset else 2
 
     # a-h
-    circuit = coherent_qec_part(model=model, meas_reset=meas_reset)
+    circuit = coherent_qec_part(model=model)
 
     # i
     rot_qubits = set(anc_qubits)

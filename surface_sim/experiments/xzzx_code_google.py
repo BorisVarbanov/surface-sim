@@ -18,11 +18,6 @@ def memory_experiment(
     if num_rounds <= 0:
         raise ValueError("num_rounds needs to be a positive integer")
 
-    if num_rounds == 1:
-        return qec_round_with_log_meas(
-            model, rot_basis, meas_reset=1, meas_comparison=False
-        )
-
     num_init_rounds = 1 if meas_reset else 2
 
     init_circ = init_qubits(model, data_init, rot_basis)
@@ -35,7 +30,7 @@ def memory_experiment(
         experiment = (
             init_circ
             + first_qec_circ * num_init_rounds
-            + qec_circ * (num_rounds - num_init_rounds - 1)
+            + qec_circ * (num_rounds - 1 - num_init_rounds)
             + qec_meas_circuit
         )
 
@@ -44,7 +39,9 @@ def memory_experiment(
     experiment = (
         init_circ
         + first_qec_circ * (min(num_rounds, num_init_rounds) - 1)
-        + qec_round_with_log_meas(model, rot_basis, meas_reset=1)
+        + qec_round_with_log_meas(
+            model, rot_basis, meas_reset=True, meas_comparison=False
+        )
     )
 
     return experiment
