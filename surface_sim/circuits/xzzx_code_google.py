@@ -51,7 +51,7 @@ def qec_round_with_log_meas(
     stab_type = "x_type" if rot_basis else "z_type"
     stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
 
-    rot_qubits = set(anc_qubits)
+    rot_qubits = anc_qubits
     for direction in ("north_west", "south_east"):
         neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
         rot_qubits.update(neighbors)
@@ -59,7 +59,7 @@ def qec_round_with_log_meas(
     for instruction in model.hadamard(rot_qubits):
         circuit.append(instruction)
 
-    idle_qubits = qubits - set(rot_qubits)
+    idle_qubits = qubits - rot_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -139,7 +139,7 @@ def coherent_qec_part(model: Model) -> Circuit:
         for instruction in model.cphase(int_qubits):
             circuit.append(instruction)
 
-    idle_qubits = qubits - set(cz_qubits)
+    idle_qubits = qubits - cz_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -167,7 +167,7 @@ def coherent_qec_part(model: Model) -> Circuit:
         for instruction in model.cphase(int_qubits):
             circuit.append(instruction)
 
-    idle_qubits = qubits - set(cz_qubits)
+    idle_qubits = qubits - cz_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -191,7 +191,7 @@ def coherent_qec_part(model: Model) -> Circuit:
         for instruction in model.cphase(int_qubits):
             circuit.append(instruction)
 
-    idle_qubits = qubits - set(cz_qubits)
+    idle_qubits = qubits - cz_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -219,7 +219,7 @@ def coherent_qec_part(model: Model) -> Circuit:
         for instruction in model.cphase(int_qubits):
             circuit.append(instruction)
 
-    idle_qubits = qubits - set(cz_qubits)
+    idle_qubits = qubits - cz_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
