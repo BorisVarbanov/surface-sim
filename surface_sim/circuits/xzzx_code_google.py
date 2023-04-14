@@ -109,9 +109,10 @@ def coherent_qec_part(model: Model) -> Circuit:
     described in Google's paper for the given model.
     """
     data_qubits = model.layout.get_qubits(role="data")
-    anc_qubits = model.layout.get_qubits(role="anc")
+    x_anc = model.layout.get_qubits(role="anc", stab_type="x_type")
+    z_anc = model.layout.get_qubits(role="anc", stab_type="z_type")
+    anc_qubits = x_anc + z_anc
     qubits = set(data_qubits + anc_qubits)
-    int_order = model.layout.interaction_order
     stab_types = list(int_order.keys())
 
     circuit = Circuit()
@@ -127,19 +128,15 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # b
-    cz_qubits = set()
-    for stab_type in stab_types:
-        ord_dir = int_order[stab_type][0]
-        int_pairs = model.layout.get_neighbors(
-            stab_qubits, direction=ord_dir, as_pairs=True
-        )
-        int_qubits = list(chain.from_iterable(int_pairs))
-        cz_qubits.update(int_qubits)
+    int_pairs = model.layout.get_neighbors(
+        anc_qubits, direction="north_east", as_pairs=True
+    )
+    int_qubits = list(chain.from_iterable(int_pairs))
 
-        for instruction in model.cphase(int_qubits):
-            circuit.append(instruction)
+    for instruction in model.cphase(int_qubits):
+        circuit.append(instruction)
 
-    idle_qubits = qubits - cz_qubits
+    idle_qubits = qubits - int_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -155,43 +152,35 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # d
-    cz_qubits = set()
-    for stab_type in stab_types:
-        ord_dir = int_order[stab_type][1]
-        int_pairs = model.layout.get_neighbors(
-            stab_qubits, direction=ord_dir, as_pairs=True
-        )
-        int_qubits = list(chain.from_iterable(int_pairs))
-        cz_qubits.update(int_qubits)
+    x_pairs = model.layout.get_neighbors(x_anc, direction="south_east", as_pairs=True)
+    z_pairs = model.layout.get_neighbors(z_anc, direction="north_west", as_pairs=True)
+    int_pairs = chain(x_pairs, z_pairs)
+    int_qubits = list(chain.from_iterable(int_pairs))
 
-        for instruction in model.cphase(int_qubits):
-            circuit.append(instruction)
+    for instruction in model.cphase(int_qubits):
+        circuit.append(instruction)
 
-    idle_qubits = qubits - cz_qubits
+    idle_qubits = qubits - int_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
 
     # e
-    x_qubits = set(anc_qubits) + set(data_qubits)
+    x_qubits = qubits
     for instruction in model.x_gate(x_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
 
     # f
-    cz_qubits = set()
-    for stab_type in stab_types:
-        ord_dir = int_order[stab_type][2]
-        int_pairs = model.layout.get_neighbors(
-            stab_qubits, direction=ord_dir, as_pairs=True
-        )
-        int_qubits = list(chain.from_iterable(int_pairs))
-        cz_qubits.update(int_qubits)
+    x_pairs = model.layout.get_neighbors(x_anc, direction="north_west", as_pairs=True)
+    z_pairs = model.layout.get_neighbors(z_anc, direction="south_east", as_pairs=True)
+    int_pairs = chain(x_pairs, z_pairs)
+    int_qubits = list(chain.from_iterable(int_pairs))
 
-        for instruction in model.cphase(int_qubits):
-            circuit.append(instruction)
+    for instruction in model.cphase(int_qubits):
+        circuit.append(instruction)
 
-    idle_qubits = qubits - cz_qubits
+    idle_qubits = qubits - int_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -207,19 +196,15 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # h
-    cz_qubits = set()
-    for stab_type in stab_types:
-        ord_dir = int_order[stab_type][3]
-        int_pairs = model.layout.get_neighbors(
-            stab_qubits, direction=ord_dir, as_pairs=True
-        )
-        int_qubits = list(chain.from_iterable(int_pairs))
-        cz_qubits.update(int_qubits)
+    int_pairs = model.layout.get_neighbors(
+        anc_qubits, direction="south_west", as_pairs=True
+    )
+    int_qubits = list(chain.from_iterable(int_pairs))
 
-        for instruction in model.cphase(int_qubits):
-            circuit.append(instruction)
+    for instruction in model.cphase(int_qubits):
+        circuit.append(instruction)
 
-    idle_qubits = qubits - cz_qubits
+    idle_qubits = qubits - int_qubits
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
