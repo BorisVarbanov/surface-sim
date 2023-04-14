@@ -129,7 +129,7 @@ def coherent_qec_part(model: Model) -> Circuit:
 
     # b
     cz_qubits = set()
-    for stab_type in enumerate(stab_types):
+    for stab_type in stab_types:
         ord_dir = int_order[stab_type][0]
         int_pairs = model.layout.get_neighbors(
             stab_qubits, direction=ord_dir, as_pairs=True
@@ -157,7 +157,7 @@ def coherent_qec_part(model: Model) -> Circuit:
 
     # d
     cz_qubits = set()
-    for stab_type in enumerate(stab_types):
+    for stab_type in stab_types:
         ord_dir = int_order[stab_type][1]
         int_pairs = model.layout.get_neighbors(
             stab_qubits, direction=ord_dir, as_pairs=True
@@ -181,7 +181,7 @@ def coherent_qec_part(model: Model) -> Circuit:
 
     # f
     cz_qubits = set()
-    for stab_type in enumerate(stab_types):
+    for stab_type in stab_types:
         ord_dir = int_order[stab_type][2]
         int_pairs = model.layout.get_neighbors(
             stab_qubits, direction=ord_dir, as_pairs=True
@@ -209,7 +209,7 @@ def coherent_qec_part(model: Model) -> Circuit:
 
     # h
     cz_qubits = set()
-    for stab_type in enumerate(stab_types):
+    for stab_type in stab_types:
         ord_dir = int_order[stab_type][3]
         int_pairs = model.layout.get_neighbors(
             stab_qubits, direction=ord_dir, as_pairs=True
