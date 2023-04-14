@@ -38,6 +38,7 @@ def qec_round_with_log_meas(
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
     qubits = set(data_qubits + anc_qubits)
+    num_data, num_anc = len(data_qubits), len(anc_qubits)
 
     # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
@@ -69,7 +70,6 @@ def qec_round_with_log_meas(
     for instruction in model.measure(anc_qubits):
         circuit.append(instruction)
 
-    num_anc = len(anc_qubits)
     if meas_comparison:
         det_targets = []
         for ind in range(num_anc):
@@ -86,7 +86,6 @@ def qec_round_with_log_meas(
     for instruction in model.measure(data_qubits):
         circuit.append(instruction)
 
-    num_data, num_anc = len(data_qubits), len(anc_qubits)
     for anc_qubit in stab_qubits:
         neighbors = model.layout.get_neighbors(anc_qubit)
         neighbor_inds = model.layout.get_inds(neighbors)
