@@ -1,7 +1,7 @@
 #!/bin/sh
 
 username="bmvarbanov"
-dataset="20230214-d3_rot-surf_circ-level_p0.001"
+dataset="20230413-d3_rot-css-surface_circ-level_p0.001_y-bias-scan"
 to_scrath=true
 
 
