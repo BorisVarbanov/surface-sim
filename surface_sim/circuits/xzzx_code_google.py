@@ -51,7 +51,7 @@ def qec_round_with_log_meas(
     stab_type = "x_type" if rot_basis else "z_type"
     stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
 
-    rot_qubits = anc_qubits
+    rot_qubits = set(anc_qubits)
     for direction in ("north_west", "south_east"):
         neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
         rot_qubits.update(neighbors)
@@ -73,7 +73,7 @@ def qec_round_with_log_meas(
     if meas_comparison:
         det_targets = []
         for ind in range(num_anc):
-            target_inds = [ind - (comp_round + 1) * num_anc, ind - num_anc]
+            target_inds = [ind - (comp_rounds + 1) * num_anc, ind - num_anc]
             targets = [target_rec(ind) for ind in target_inds]
             det_targets.append(targets)
     else:
@@ -113,7 +113,6 @@ def coherent_qec_part(model: Model) -> Circuit:
     z_anc = model.layout.get_qubits(role="anc", stab_type="z_type")
     anc_qubits = x_anc + z_anc
     qubits = set(data_qubits + anc_qubits)
-    stab_types = list(int_order.keys())
 
     circuit = Circuit()
 
@@ -136,7 +135,7 @@ def coherent_qec_part(model: Model) -> Circuit:
     for instruction in model.cphase(int_qubits):
         circuit.append(instruction)
 
-    idle_qubits = qubits - int_qubits
+    idle_qubits = qubits - set(int_qubits)
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -160,7 +159,7 @@ def coherent_qec_part(model: Model) -> Circuit:
     for instruction in model.cphase(int_qubits):
         circuit.append(instruction)
 
-    idle_qubits = qubits - int_qubits
+    idle_qubits = qubits - set(int_qubits)
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -180,7 +179,7 @@ def coherent_qec_part(model: Model) -> Circuit:
     for instruction in model.cphase(int_qubits):
         circuit.append(instruction)
 
-    idle_qubits = qubits - int_qubits
+    idle_qubits = qubits - set(int_qubits)
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
@@ -204,7 +203,7 @@ def coherent_qec_part(model: Model) -> Circuit:
     for instruction in model.cphase(int_qubits):
         circuit.append(instruction)
 
-    idle_qubits = qubits - int_qubits
+    idle_qubits = qubits - set(int_qubits)
     for instruction in model.idle(idle_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
