@@ -151,8 +151,8 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # d
-    x_pairs = model.layout.get_neighbors(x_anc, direction="south_east", as_pairs=True)
-    z_pairs = model.layout.get_neighbors(z_anc, direction="north_west", as_pairs=True)
+    x_pairs = model.layout.get_neighbors(x_anc, direction="north_west", as_pairs=True)
+    z_pairs = model.layout.get_neighbors(z_anc, direction="south_east", as_pairs=True)
     int_pairs = chain(x_pairs, z_pairs)
     int_qubits = list(chain.from_iterable(int_pairs))
 
@@ -171,8 +171,8 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # f
-    x_pairs = model.layout.get_neighbors(x_anc, direction="north_west", as_pairs=True)
-    z_pairs = model.layout.get_neighbors(z_anc, direction="south_east", as_pairs=True)
+    x_pairs = model.layout.get_neighbors(x_anc, direction="south_east", as_pairs=True)
+    z_pairs = model.layout.get_neighbors(z_anc, direction="north_west", as_pairs=True)
     int_pairs = chain(x_pairs, z_pairs)
     int_qubits = list(chain.from_iterable(int_pairs))
 
@@ -244,7 +244,7 @@ def qec_round(
     for instruction in model.hadamard(rot_qubits):
         circuit.append(instruction)
 
-    for instruction in model.idle(data_qubits):
+    for instruction in model.x_gate(data_qubits):
         circuit.append(instruction)
     circuit.append("TICK")
 
