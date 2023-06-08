@@ -31,13 +31,15 @@ def memory_experiment(
     first_qec_circ = qec_round(
         model, meas_reset, meas_comparison=False, stab_type_det=stab_type_det
     )
+    second_qec_circ = qec_round(model, meas_reset, meas_comparison=False)
 
     if num_rounds > num_init_rounds:
         qec_circ = qec_round(model, meas_reset)
 
         experiment = (
             init_circ
-            + first_qec_circ * num_init_rounds
+            + first_qec_circ
+            + second_qec_circ * (num_init_rounds - 1)
             + qec_circ * (num_rounds - num_init_rounds)
             + meas_circuit
         )
@@ -46,7 +48,8 @@ def memory_experiment(
 
     experiment = (
         init_circ
-        + first_qec_circ * min(num_rounds, num_init_rounds)
+        + first_qec_circ
+        + second_qec_circ * (min(num_rounds, num_init_rounds) - 1)
         + log_meas(model, rot_basis, meas_reset=1)
     )
 
