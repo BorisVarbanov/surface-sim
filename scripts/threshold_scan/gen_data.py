@@ -33,6 +33,7 @@ ROOT_SEED: Union[int, None] = np.random.randint(999999)  # Initial seed for the 
 NUM_SHOTS: int = 20000  # Number of shots
 ROT_BASIS: bool = False  # In the z-basis
 MEAS_RESET: bool = False  # No resets following measurements
+GAUGE_DETECTORS: bool = True  # Add gauge detectors
 
 # Variable parameters
 DISTANCES = [3, 7, 9, 11]
@@ -78,6 +79,7 @@ for distance, prob in run_parameters:
             data_init=data_init,
             rot_basis=ROT_BASIS,
             meas_reset=MEAS_RESET,
+            gauge_detectors=GAUGE_DETECTORS,
         )
 
         experiment.to_file(exp_folder / "circuit.stim")
@@ -104,7 +106,7 @@ for distance, prob in run_parameters:
 
         error_model = experiment.detector_error_model(
             decompose_errors=True,
-            allow_gauge_detectors=True,
+            allow_gauge_detectors=GAUGE_DETECTORS,
         )
         error_model.to_file(exp_folder / "detector_error_model.dem")
 
