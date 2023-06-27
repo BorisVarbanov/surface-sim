@@ -50,7 +50,7 @@ def logical_s_experiment(
     model: Model,
     num_s_gates: int,
     data_init: np.ndarray,
-    # meas_reset: bool = False,
+    meas_reset: bool = False,
 ) -> Circuit:
     if not isinstance(num_s_gates, int):
         raise ValueError(
@@ -61,7 +61,7 @@ def logical_s_experiment(
         raise ValueError("num_s_gates needs to be a positive integer")
 
     # Assume meas_reset = True for easier implementation of the detectors
-    meas_reset = True
+    assert meas_reset
     # Rotation basis so that we see an effect of the logical S gate
     rot_basis = True
 
