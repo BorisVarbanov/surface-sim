@@ -85,6 +85,24 @@ class CircuitNoiseModel(Model):
             prob = self.param("sq_error_prob", qubit)
             yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
 
+    def s_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
+
+        yield CircuitInstruction("S", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
+    def s_dag_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        inds = self.layout.get_inds(qubits)
+
+        yield CircuitInstruction("S_DAG", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
     def hadamard(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         inds = self.layout.get_inds(qubits)
 
