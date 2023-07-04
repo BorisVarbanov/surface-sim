@@ -1,7 +1,7 @@
 #!/bin/sh
 
 username="bmvarbanov"
-dataset="20230317-d3_rot-xzzx-surface_circ-level_p0.001_z-bias-scan"
+dataset="20230314-rot-xzzx-surface_circ-level_threshold"
 from_scrath=false
 
 
