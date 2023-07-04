@@ -2996,7 +2996,7 @@ xarray = "^0.21"
 type = "git"
 url = "https://github.com/BorisVarbanov/qec-util.git"
 reference = "develop"
-resolved_reference = "5c99c442b12cd9dbc9b34914d72daa76ebc7b0d1"
+resolved_reference = "5a6b917f1b25bb7ee6685384573794cfc3b7c2f4"
 
 [[package]]
 name = "qtconsole"
