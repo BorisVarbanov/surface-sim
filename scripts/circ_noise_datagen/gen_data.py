@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 from qec_util.layouts import Layout, plot, set_coords
 
 from surface_sim import Setup
-from surface_sim.experiments import memory_exp
+from surface_sim.experiments.css_code import memory_experiment
 from surface_sim.models import CircuitNoiseModel
 from surface_sim.util import sample_experiment
 
@@ -43,9 +43,11 @@ DATASET_TYPE: str = "test"  # Possible types are "train", "dev" and "test"
 # Fixed parameters
 ROOT_SEED: Union[int, None] = np.random.randint(999999)  # Initial seed for the RNG
 LIST_NUM_ROUNDS: List[int] = list(range(1, 21, 2))  # Number of rounds
-NUM_SHOTS: int = 20000  # Number of shots
+NUM_SHOTS: int = 1000  # Number of shots
 ROT_BASIS: bool = False  # In the z-basis
 MEAS_RESET: bool = False  # No resets following measurements
+ASSIGN_ERRORS: bool = True  # Add assignement errors
+ASSIGN_PROB: float = 0.001  # Assignment error probability
 
 # Variable parameters
 data_qubits = layout.get_qubits(role="data")
@@ -67,6 +69,9 @@ global_seeds = iter(root_seed_sequence.generate_state(num_runs, dtype="uint64"))
 distance = layout.distance
 basis = "X" if ROT_BASIS else "Z"
 
+model.setup.set_var_param("assign_errors", ASSIGN_ERRORS)
+model.setup.set_var_param("assign_prob", ASSIGN_PROB)
+
 for prob in DEPOL_PROBS:
     model.setup.set_var_param("prob", prob)
 
@@ -84,7 +89,7 @@ for prob in DEPOL_PROBS:
             exp_folder = EXP_DIR / DATASET_TYPE / exp_name
             exp_folder.mkdir(parents=True, exist_ok=True)
 
-            experiment = memory_exp(
+            experiment = memory_experiment(
                 model=model,
                 num_rounds=num_rounds,
                 data_init=data_init,

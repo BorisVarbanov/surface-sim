@@ -1,38 +1,26 @@
 # %%
-import pathlib
-from typing import List, Union
-from itertools import repeat
+from pathlib import Path
+from itertools import product, repeat
+from typing import Union
 
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
-from qec_util.layouts import Layout, plot, set_coords
+from qec_util.layouts import rot_surf_code
 
 from surface_sim import Setup
 from surface_sim.experiments.css_code import memory_experiment
-from surface_sim.models import BiasedCircuitNoiseModel
+from surface_sim.models import CircuitNoiseModel
 from surface_sim.util import sample_experiment
 
 # %%
-EXP_DIR = pathlib.Path.cwd()
-
-CONFIG_DIR = EXP_DIR / "config"
-if not CONFIG_DIR.exists():
-    raise ValueError("Layout directory does not exist.")
+EXP_DIR: Path = Path.cwd()
+CONFIG_DIR: Path = EXP_DIR / "config"
 
 # %%
-LAYOUT_FILE = "d3_rotated_layout.yaml"
-SETUP_FILE = "biased_circ_level_noise.yaml"
-
-layout = Layout.from_yaml(CONFIG_DIR / LAYOUT_FILE)
-set_coords(layout)
+SETUP_FILE = "circ_level_noise.yaml"
 setup = Setup.from_yaml(CONFIG_DIR / SETUP_FILE)
-model = BiasedCircuitNoiseModel(setup, layout)
 
-# %%
-fig, ax = plt.subplots()
-_ = plot(layout, axis=ax)
-plt.show()
 
 # %% [markdown]
 # # Generate the training data
@@ -42,44 +30,44 @@ DATASET_TYPE: str = "test"  # Possible types are "train", "dev" and "test"
 
 # Fixed parameters
 ROOT_SEED: Union[int, None] = np.random.randint(999999)  # Initial seed for the RNG
-LIST_NUM_ROUNDS: List[int] = list(range(1, 21, 2))  # Number of rounds
 NUM_SHOTS: int = 20000  # Number of shots
 ROT_BASIS: bool = False  # In the z-basis
 MEAS_RESET: bool = False  # No resets following measurements
-ERROR_PROBS: float = 1e-3
-BIAS_FACTOR: float = 1
-BIAS_PAULI: str = "X"
 
 # Variable parameters
-data_qubits = layout.get_qubits(role="data")
-num_data_qubits = len(data_qubits)
-
-DATA_INITS: List[List[int]] = [
-    list(repeat(state, num_data_qubits)) for state in (0, 1)
-]  # Logical state(s)
+DISTANCES = [3, 7, 9, 11]
+LOG_STATES = [0, 1]
+DEPOL_PROBS = np.linspace(1e-2, 1e-3, 10)
 
 # %%
 root_seed_sequence = np.random.SeedSequence(ROOT_SEED)
-num_runs = len(LIST_NUM_ROUNDS)
+
+run_parameters = tuple(product(DISTANCES, DEPOL_PROBS))
+num_runs = len(run_parameters)
+
 global_seeds = iter(root_seed_sequence.generate_state(num_runs, dtype="uint64"))
 
-distance = layout.distance
 basis = "X" if ROT_BASIS else "Z"
+num_states = len(LOG_STATES)
 
-model.setup.set_var_param("prob", ERROR_PROBS)
-model.setup.set_var_param("bias_factor", BIAS_FACTOR)
-model.setup.set_var_param("bias_pauli", BIAS_PAULI)
+for distance, prob in run_parameters:
+    print(f"Distance: {distance}, Error prob: {prob:.3f}")
+    setup.set_var_param("prob", prob)
 
-for num_rounds in LIST_NUM_ROUNDS:
-    print(num_rounds, end="\r")
+    layout = rot_surf_code(distance=distance)
+    model = CircuitNoiseModel(setup, layout)
 
-    num_experiments = len(DATA_INITS)
+    data_qubits = layout.get_qubits(role="data")
+    num_data = len(data_qubits)
+    num_rounds = distance
+
     seed_sequence = np.random.SeedSequence(next(global_seeds))
-    seeds = iter(seed_sequence.generate_state(num_experiments, dtype="uint64"))
+    seeds = iter(seed_sequence.generate_state(num_states, dtype="uint64"))
 
-    for data_init in DATA_INITS:
-        init_str = "".join(map(str, data_init))
-        exp_name = f"surf-code_d{layout.distance}_b{basis}_s{init_str}_n{NUM_SHOTS}_r{num_rounds}"
+    for state in LOG_STATES:
+        data_init = list(repeat(bool(state), num_data))
+
+        exp_name = f"surf-code_d{distance}_b{basis}_s{state}_n{NUM_SHOTS}_r{num_rounds}_p{prob:.3f}"
 
         exp_folder = EXP_DIR / DATASET_TYPE / exp_name
         exp_folder.mkdir(parents=True, exist_ok=True)
@@ -96,20 +84,20 @@ for num_rounds in LIST_NUM_ROUNDS:
 
         seed = next(seeds)
         dataset = sample_experiment(
-            layout,
-            experiment,
+            layout=layout,
+            experiment=experiment,
             seed=seed,
             num_shots=NUM_SHOTS,
             num_rounds=num_rounds,
         )
 
         # assign these as coordinate for merging datasets later on. Add here any otther relevant parameters
-        dataset["data_init"] = xr.DataArray(
-            np.array(data_init, dtype=bool), dims=["data_qubit"]
-        )
+        dataset["data_init"] = xr.DataArray(data_init, dims=["data_qubit"])
         dataset = dataset.assign_coords(
             rot_basis=ROT_BASIS,
             meas_reset=MEAS_RESET,
+            distance=distance,
+            error_prob=prob,
         )
         dataset.assign_attrs(seed=seed)
         dataset.to_netcdf(exp_folder / "measurements.nc")
@@ -117,9 +105,7 @@ for num_rounds in LIST_NUM_ROUNDS:
         error_model = experiment.detector_error_model(
             decompose_errors=True,
             allow_gauge_detectors=True,
-            approximate_disjoint_errors=True,
         )
         error_model.to_file(exp_folder / "detector_error_model.dem")
-
 
 # %%

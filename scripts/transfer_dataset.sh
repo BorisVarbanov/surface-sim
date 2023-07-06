@@ -1,8 +1,8 @@
 #!/bin/sh
 
 username="bmvarbanov"
-dataset="20230214-d3_rot-surf_circ-level_p0.001"
-to_scrath=true
+dataset="20230510-d3_rot-xzzx-google_circ-level_p0.001_y-bias-scan"
+to_scrath=false
 
 
 
