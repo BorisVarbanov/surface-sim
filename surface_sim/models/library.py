@@ -234,3 +234,132 @@ class BiasedCircuitNoiseModel(Model):
             )
             prob = prob * prefactors
             yield CircuitInstruction("PAULI_CHANNEL_1", [ind], prob)
+
+
+class ExperimentalNoiseModel(Model):
+    """An experimental noise model"""
+
+    def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        """
+        x_gate Returns the circuit instructions for an X gate on the given qubits.
+
+        Parameters
+        ----------
+        qubits : Sequence[str]
+            The qubits to apply the X gate to.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for an X gate on the given qubits.
+        """
+        inds = self.layout.get_inds(qubits)
+        yield CircuitInstruction("X", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
+    def hadamard(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        """
+        hadamard Returns the circuit instructions for a Hadamard gate on the given qubits.
+
+        Parameters
+        ----------
+        qubits : Sequence[str]
+            The qubits to apply the Hadamard gate to.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for a Hadamard gate on the given qubits.
+        """
+        inds = self.layout.get_inds(qubits)
+
+        yield CircuitInstruction("H", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
+    def cphase(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        """
+        cphase Returns the circuit instructions for a CPHASE gate on the given qubits.
+
+        Parameters
+        ----------
+        qubits : Sequence[str]
+            The list of pairs of qubits to apply the CPHASE gate to.
+            The first qubit in each pair is the control qubit, while the second is the target qubit.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for a CPHASE gate on the given qubits.
+
+        Raises
+        ------
+        ValueError
+            If the number of qubits is not even.
+        """
+        if len(qubits) % 2 != 0:
+            raise ValueError("Expected and even number of qubits.")
+
+        inds = self.layout.get_inds(qubits)
+
+        yield CircuitInstruction("CZ", inds)
+
+        for qubit_pair, ind_pair in zip(grouper(qubits, 2), grouper(inds, 2)):
+            prob = self.param("cz_error_prob", *qubit_pair)
+            yield CircuitInstruction("DEPOLARIZE2", ind_pair, [prob])
+
+    def measure(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        """
+        measure Returns the circuit instructions for a measurement on the given qubits.
+
+        Parameters
+        ----------
+        qubits : Sequence[str]
+            The qubits to measure.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for a measurement on the given qubits.
+        """
+        inds = self.layout.get_inds(qubits)
+
+        for qubit, ind in zip(qubits, inds):
+            error_prob = self.param("assign_error", qubit)
+            yield CircuitInstruction("X_ERROR", ind, error_prob)
+            yield CircuitInstruction("M", ind)
+
+    def idle(
+        self,
+        qubits: Sequence[str],
+        duration: float,
+        add_echo: bool = False,
+    ) -> Iterator[CircuitInstruction]:
+        """
+        idle Returns the circuit instructions for an idling period on the given qubits.
+
+        Parameters
+        ----------
+        qubits : Sequence[str]
+            The qubits to idle.
+        duration : float
+            The duration of the idling period.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for an idling period on the given qubits.
+        """
+        inds = self.layout.get_inds(qubits)
+
+        for qubit, ind in zip(qubits, inds):
+            relax_time = self.param("relax_time", qubit)
+            deph_time = self.param("deph_time", qubit)
+
+            prob = self.param("idle_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
