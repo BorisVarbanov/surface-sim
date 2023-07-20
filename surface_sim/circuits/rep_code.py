@@ -4,13 +4,10 @@ from typing import List
 
 from stim import Circuit, target_rec
 
-from ..models import Model
+from ..models import ExperimentalNoiseModel
 
 
-def log_meas(
-    model: Model,
-    meas_reset: bool = False,
-) -> Circuit:
+def log_meas(model: ExperimentalNoiseModel) -> Circuit:
     """
     Returns stim circuit corresponding to a logical measurement
     of the given model.
@@ -22,14 +19,15 @@ def log_meas(
 
     # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
-    comp_rounds = 1 if meas_reset else 2
+    comp_rounds = 2
 
     circuit = Circuit()
 
     for instruction in model.measure(data_qubits):
         circuit.append(instruction)
 
-    for instruction in model.idle(anc_qubits):
+    meas_duration = model.param("meas_duration")
+    for instruction in model.idle(anc_qubits, meas_duration):
         circuit.append(instruction)
 
     circuit.append("TICK")
@@ -54,11 +52,7 @@ def log_meas(
     return circuit
 
 
-def qec_round(
-    model: Model,
-    meas_reset: bool = False,
-    meas_comparison: bool = True,
-) -> Circuit:
+def qec_round(model: ExperimentalNoiseModel, meas_comparison: bool = True) -> Circuit:
     """
     qec_round generates a circuit for a single round of error correction for the repetition code
 
@@ -66,8 +60,6 @@ def qec_round(
     ----------
     model : Model
         The error model used for modelling operations
-    meas_reset : bool, optional
-        Whether to use resets after each measurement , by default False
     meas_comparison : bool, optional
         Whether to compare with previous measurements when declaring the detectors, by default True
 
@@ -95,9 +87,10 @@ def qec_round(
         if anc_type != stab_type:
             raise NotImplementedError("All ancilla qubits must be the same type.")
 
-    # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
-    comp_round = 1 if meas_reset else 2
+
+    sq_gate_duration = model.param("sq_gate_duration")
+    cz_gate_duration = model.param("cz_gate_duration")
 
     check_orders = (0, 1)
 
@@ -112,7 +105,7 @@ def qec_round(
                 circuit.append(instruction)
 
             idle_qubits = qubits.difference(check_qubits)
-            for instruction in model.idle(idle_qubits):
+            for instruction in model.idle(idle_qubits, sq_gate_duration):
                 circuit.append(instruction)
             circuit.append("TICK")
 
@@ -126,7 +119,7 @@ def qec_round(
                 circuit.append(instruction)
 
             idle_qubits = qubits.difference(int_qubits)
-            for instruction in model.idle(idle_qubits):
+            for instruction in model.idle(idle_qubits, cz_gate_duration):
                 circuit.append(instruction)
             circuit.append("TICK")
 
@@ -135,37 +128,30 @@ def qec_round(
                 circuit.append(instruction)
 
             idle_qubits = qubits.difference(check_qubits)
-            for instruction in model.idle(idle_qubits):
+            for instruction in model.idle(idle_qubits, sq_gate_duration):
                 circuit.append(instruction)
         else:
             for instruction in model.hadamard(anc_qubits):
                 circuit.append(instruction)
 
-            for instruction in model.idle(data_qubits):
+            for instruction in model.idle(data_qubits, sq_gate_duration):
                 circuit.append(instruction)
         circuit.append("TICK")
 
     for instruction in model.measure(anc_qubits):
         circuit.append(instruction)
 
-    for instruction in model.idle(data_qubits):
+    meas_duration = model.param("meas_duration")
+    for instruction in model.echoed_idle(data_qubits, meas_duration):
         circuit.append(instruction)
     circuit.append("TICK")
-
-    if meas_reset:
-        for instruction in model.reset(anc_qubits):
-            circuit.append(instruction)
-        for instruction in model.idle(data_qubits):
-            circuit.append(instruction)
-
-        circuit.append("TICK")
 
     # detectors ordered as in the measurements
     num_anc = len(anc_qubits)
     if meas_comparison:
         det_targets = []
         for ind in range(num_anc):
-            target_inds = [ind - (comp_round + 1) * num_anc, ind - num_anc]
+            target_inds = [ind - 3 * num_anc, ind - num_anc]
             targets = [target_rec(ind) for ind in target_inds]
             det_targets.append(targets)
     else:
@@ -177,7 +163,7 @@ def qec_round(
     return circuit
 
 
-def init_qubits(model: Model, data_init: List[int]) -> Circuit:
+def init_qubits(model: ExperimentalNoiseModel, data_init: List[int]) -> Circuit:
     """
     Returns stim circuit corresponding to a logical initialization
     of the given model.
@@ -200,7 +186,8 @@ def init_qubits(model: Model, data_init: List[int]) -> Circuit:
             circuit.append(instruction)
 
     idle_qubits = qubits - exc_qubits
-    for instruction in model.idle(idle_qubits):
+    sq_gate_duration = model.param("sq_gate_duration")
+    for instruction in model.idle(idle_qubits, sq_gate_duration):
         circuit.append(instruction)
     circuit.append("TICK")
 

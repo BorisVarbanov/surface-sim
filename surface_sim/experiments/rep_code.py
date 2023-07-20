@@ -6,12 +6,7 @@ from ..circuits.rep_code import init_qubits, log_meas, qec_round
 from ..models import Model
 
 
-def memory_experiment(
-    model: Model,
-    num_rounds: int,
-    data_init: List[int],
-    meas_reset: bool = False,
-) -> Circuit:
+def memory_experiment(model: Model, num_rounds: int, data_init: List[int]) -> Circuit:
     """
     memory_experiment Constructs a circuit for a memory experiment.
 
@@ -44,17 +39,17 @@ def memory_experiment(
     if num_rounds <= 0:
         raise ValueError("num_rounds needs to be a positive integer")
 
-    num_init_rounds = 1 if meas_reset else 2
+    num_init_rounds = 2
 
     init = init_qubits(model, data_init)
-    meas = log_meas(model, meas_reset)
+    meas = log_meas(model)
 
-    init_qec_round = qec_round(model, meas_reset, meas_comparison=False)
+    init_qec_round = qec_round(model, meas_comparison=False)
 
     if num_rounds > num_init_rounds:
         init_rounds = init_qec_round * num_init_rounds
 
-        sub_qec_round = qec_round(model, meas_reset)
+        sub_qec_round = qec_round(model, meas_comparison=True)
         sub_rounds = sub_qec_round * (num_rounds - num_init_rounds)
 
         rep_checks = init_rounds + sub_rounds
