@@ -270,7 +270,7 @@ class ExperimentalNoiseModel(Model):
             The circuit instructions for a Hadamard gate on the given qubits.
         """
         inds = self.layout.get_inds(qubits)
-        yield CircuitInstruction("X", inds)
+        yield CircuitInstruction("H", inds)
 
         for qubit, ind in zip(qubits, inds):
             gate_error = self.param("gate_error", qubit)
