@@ -1,13 +1,16 @@
 """Module containing functions for generating circuits for a repetition code memory experiment."""
 from itertools import chain, compress
-from typing import List
+from typing import List, Optional
 
 from stim import Circuit, target_rec
 
 from ..models import ExperimentalNoiseModel
 
 
-def log_meas(model: ExperimentalNoiseModel) -> Circuit:
+def log_meas(
+    model: ExperimentalNoiseModel,
+    comp_rounds: Optional[int] = None,
+) -> Circuit:
     """
     Returns stim circuit corresponding to a logical measurement
     of the given model.
@@ -16,10 +19,6 @@ def log_meas(model: ExperimentalNoiseModel) -> Circuit:
     """
     anc_qubits = model.layout.get_qubits(role="anc")
     data_qubits = model.layout.get_qubits(role="data")
-
-    # With reset defect[n] = m[n] XOR m[n-1]
-    # Wihtout reset defect[n] = m[n] XOR m[n-2]
-    comp_rounds = 2
 
     circuit = Circuit()
 
@@ -36,14 +35,17 @@ def log_meas(model: ExperimentalNoiseModel) -> Circuit:
     num_anc = len(anc_qubits)
 
     for anc_qubit in anc_qubits:
-        neighbors = model.layout.get_neighbors(anc_qubit)
-        neighbor_inds = (data_qubits.index(neighbor) for neighbor in neighbors)
-        targets = [target_rec(ind - num_data) for ind in neighbor_inds]
+        # Wihtout reset defect[n] = m[n] XOR m[n-2]
+        nbr_qubits = model.layout.get_neighbors(anc_qubit)
+        nbr_inds = (data_qubits.index(nbr_qubit) for nbr_qubit in nbr_qubits)
 
-        anc_ind = anc_qubits.index(anc_qubit)
-        for round_ind in range(1, comp_rounds + 1):
-            target = target_rec(anc_ind - num_data - round_ind * num_anc)
-            targets.append(target)
+        targets = [target_rec(ind - num_data) for ind in nbr_inds]
+
+        if comp_rounds is not None:
+            anc_ind = anc_qubits.index(anc_qubit)
+            for round_ind in range(1, comp_rounds + 1):
+                target = target_rec(anc_ind - num_data - round_ind * num_anc)
+                targets.append(target)
         circuit.append("DETECTOR", targets)
 
     targets = [target_rec(ind) for ind in range(-num_data, 0)]
@@ -52,7 +54,10 @@ def log_meas(model: ExperimentalNoiseModel) -> Circuit:
     return circuit
 
 
-def qec_round(model: ExperimentalNoiseModel, meas_comparison: bool = True) -> Circuit:
+def qec_round(
+    model: ExperimentalNoiseModel,
+    comp_rounds: Optional[int] = None,
+) -> Circuit:
     """
     qec_round generates a circuit for a single round of error correction for the repetition code
 
@@ -148,18 +153,16 @@ def qec_round(model: ExperimentalNoiseModel, meas_comparison: bool = True) -> Ci
 
     # detectors ordered as in the measurements
     num_anc = len(anc_qubits)
-    if meas_comparison:
-        det_targets = []
+
+    if comp_rounds:
+        round_offsets = (1, comp_rounds + 1)
         for ind in range(num_anc):
-            target_inds = [ind - 3 * num_anc, ind - num_anc]
-            targets = [target_rec(ind) for ind in target_inds]
-            det_targets.append(targets)
+            targets = [target_rec(ind - num_anc * offset) for offset in round_offsets]
+            circuit.append("DETECTOR", targets)
     else:
-        det_targets = [[target_rec(ind - num_anc)] for ind in range(num_anc)]
-
-    for targets in det_targets:
-        circuit.append("DETECTOR", targets)
-
+        for anc_ind in range(num_anc):
+            target = target_rec(anc_ind - num_anc)
+            circuit.append("DETECTOR", target)
     return circuit
 
 

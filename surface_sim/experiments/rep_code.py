@@ -39,28 +39,29 @@ def memory_experiment(model: Model, num_rounds: int, data_init: List[int]) -> Ci
     if num_rounds < 0:
         raise ValueError("num_rounds needs to be a positive integer")
 
-    num_init_rounds = 2
-
     init = init_qubits(model, data_init)
-    meas = log_meas(model)
-
-    init_qec_round = qec_round(model, meas_comparison=False)
 
     if num_rounds == 0:
+        meas = log_meas(model)
         experiment = init + meas
         return experiment
 
-    if num_rounds > num_init_rounds:
-        init_rounds = init_qec_round * num_init_rounds
+    init_round = qec_round(model)
 
-        sub_qec_round = qec_round(model, meas_comparison=True)
-        sub_rounds = sub_qec_round * (num_rounds - num_init_rounds)
+    if num_rounds == 1:
+        meas = log_meas(model, comp_rounds=1)
+        experiment = init + init_round + meas
+        return experiment
 
-        rep_checks = init_rounds + sub_rounds
+    meas = log_meas(model, comp_rounds=2)
+    init_rounds = init_round * 2
 
-    else:
-        rep_checks = init_qec_round * min(num_rounds, num_init_rounds)
+    if num_rounds == 2:
+        experiment = init + init_rounds + meas
+        return experiment
 
-    experiment = init + rep_checks + meas
+    sub_round = qec_round(model, comp_rounds=2)
+    sub_rounds = sub_round * (num_rounds - 2)
 
+    experiment = init + init_rounds + sub_rounds + meas
     return experiment
