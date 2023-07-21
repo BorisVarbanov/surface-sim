@@ -36,7 +36,7 @@ def memory_experiment(model: Model, num_rounds: int, data_init: List[int]) -> Ci
     if not isinstance(num_rounds, int):
         raise ValueError(f"num_rounds expected as int, got {type(num_rounds)} instead.")
 
-    if num_rounds <= 0:
+    if num_rounds < 0:
         raise ValueError("num_rounds needs to be a positive integer")
 
     num_init_rounds = 2
@@ -45,6 +45,10 @@ def memory_experiment(model: Model, num_rounds: int, data_init: List[int]) -> Ci
     meas = log_meas(model)
 
     init_qec_round = qec_round(model, meas_comparison=False)
+
+    if num_rounds == 0:
+        experiment = init + meas
+        return experiment
 
     if num_rounds > num_init_rounds:
         init_rounds = init_qec_round * num_init_rounds
