@@ -11,7 +11,7 @@ repository = "https://github.com/BorisVarbanov/surface17_simulation"
 keywords = ["quantum", "error correction", "surface code", "stabilizer simulation"]
 
 [tool.poetry.dependencies]
-python = ">=3.10, <3.11"
+python = ">=3.10, <3.12"
 numpy = "^1.22.4"
 scipy = "^1.8.1"
 sympy = "^1.10.1"
