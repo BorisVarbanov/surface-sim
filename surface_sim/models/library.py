@@ -246,12 +246,13 @@ class ExperimentalNoiseModel(Model):
         Iterator[CircuitInstruction]
             The circuit instructions for an X gate on the given qubits.
         """
+        dim = 2
         inds = self.layout.get_inds(qubits)
         yield CircuitInstruction("X", inds)
 
         for qubit, ind in zip(qubits, inds):
             gate_error = self.param("gate_error", qubit)
-            depol_prob = 2 * gate_error
+            depol_prob = (dim + 1) * gate_error / dim
 
             yield CircuitInstruction("DEPOLARIZE1", [ind], [depol_prob])
 
@@ -269,12 +270,13 @@ class ExperimentalNoiseModel(Model):
         Iterator[CircuitInstruction]
             The circuit instructions for a Hadamard gate on the given qubits.
         """
+        dim = 2
         inds = self.layout.get_inds(qubits)
         yield CircuitInstruction("H", inds)
 
         for qubit, ind in zip(qubits, inds):
             gate_error = self.param("gate_error", qubit)
-            depol_prob = 2 * gate_error
+            depol_prob = (dim + 1) * gate_error / dim
 
             yield CircuitInstruction("DEPOLARIZE1", [ind], [depol_prob])
 
@@ -301,6 +303,8 @@ class ExperimentalNoiseModel(Model):
         if len(qubits) % 2 != 0:
             raise ValueError("Expected and even number of qubits.")
 
+        dim = 4
+
         inds = self.layout.get_inds(qubits)
         yield CircuitInstruction("CZ", inds)
 
@@ -309,7 +313,7 @@ class ExperimentalNoiseModel(Model):
 
         for qubit_pair, ind_pair in zip(qubit_pairs, ind_pairs):
             gate_error = self.param("gate_error", *qubit_pair)
-            depol_prob = 4 * gate_error / 3
+            depol_prob = (dim + 1) * gate_error / dim
 
             yield CircuitInstruction("DEPOLARIZE2", ind_pair, [depol_prob])
 

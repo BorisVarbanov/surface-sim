@@ -1,0 +1,350 @@
+name: Embedded d=7 repetition code layout.
+description: Layout file for a 17-qubits rotated surface code, where a subset of the qubits are used to implement a distance-7 repetition code. Follows the frequency scheme and labeling used in the DC lab.
+distance: 7
+
+freq_order: ["low", "mid", "high"]
+
+interaction_order: ["north_east", "north_west"]
+
+layout:
+  - qubit: D9
+    role: data
+    coords: [1, 0]
+    chain_ind: 0
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: null
+      south_east: X4
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#fafafa"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line: null
+
+  - qubit: X4
+    role: anc
+    coords: [0, 1]
+    chain_ind: 1
+    stab_type: "z_type"
+    freq_group: mid
+    check_order: 0
+    neighbors:
+      north_west: D9
+      north_east: D8
+      south_west: null
+      south_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#4caf50"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line:
+        color: "#a5d6a7"
+        linewidth: 4
+
+  - qubit: D8
+    role: data
+    coords: [1, 2]
+    chain_ind: 2
+    stab_type: null
+    freq_group: low
+    neighbors:
+      south_east: X3
+      south_west: X4
+      north_west: null
+      north_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#fafafa"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line: null
+
+  - qubit: X3
+    role: anc
+    coords: [0, 3]
+    chain_ind: 3
+    stab_type: "z_type"
+    freq_group: mid
+    check_order: 1
+    neighbors:
+      north_west: D8
+      north_east: D5
+      south_west: null
+      south_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#4caf50"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line:
+        color: "#a5d6a7"
+        linewidth: 4
+
+  - qubit: D5
+    role: data
+    coords: [1, 4]
+    chain_ind: 4
+    stab_type: null
+    freq_group: high
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: X3
+      south_east: Z1
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#fafafa"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+
+  - qubit: Z1
+    role: anc
+    coords: [0, 5]
+    chain_ind: 5
+    stab_type: "z_type"
+    freq_group: mid
+    check_order: 0
+    neighbors:
+      north_west: D5
+      north_east: D1
+      south_west: null
+      south_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#4caf50"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line:
+        color: "#a5d6a7"
+        linewidth: 4
+
+  - qubit: D1
+    role: data
+    coords: [1, 6]
+    chain_ind: 6
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: Z1
+      south_east: X1
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#fafafa"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line: null
+
+  - qubit: X1
+    role: anc
+    coords: [0, 7]
+    chain_ind: 7
+    stab_type: "z_type"
+    freq_group: mid
+    check_order: 1
+    neighbors:
+      north_west: D1
+      north_east: D2
+      south_west: null
+      south_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#4caf50"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line:
+        color: "#a5d6a7"
+        linewidth: 4
+
+  - qubit: D2
+    role: data
+    coords: [1, 8]
+    chain_ind: 8
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: X1
+      south_east: X2
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#fafafa"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line: null
+
+  - qubit: X2
+    role: anc
+    coords: [0, 9]
+    chain_ind: 9
+    stab_type: "z_type"
+    freq_group: mid
+    check_order: 0
+    neighbors:
+      north_west: D2
+      north_east: D3
+      south_west: null
+      south_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#4caf50"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line:
+        color: "#a5d6a7"
+        linewidth: 4
+
+  - qubit: D3
+    role: data
+    coords: [1, 10]
+    chain_ind: 10
+    stab_type: null
+    freq_group: low
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: X2
+      south_east: Z2
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#fafafa"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line: null
+
+  - qubit: Z2
+    role: anc
+    coords: [0, 11]
+    chain_ind: 11
+    stab_type: "z_type"
+    freq_group: mid
+    check_order: 1
+    neighbors:
+      north_west: D3
+      north_east: D6
+      south_west: null
+      south_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#4caf50"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line:
+        color: "#a5d6a7"
+        linewidth: 4
+
+  - qubit: D6
+    role: data
+    coords: [1, 12]
+    chain_ind: 12
+    stab_type: null
+    freq_group: high
+    neighbors:
+      north_west: null
+      north_east: null
+      south_west: Z2
+      south_east: null
+    metaparams:
+      circle:
+        radius: 0.35
+        linewidth: 1
+        facecolor: "#fafafa"
+        edgecolor: "#000000"
+      patch: null
+      text:
+        horizontalalignment: "center"
+        verticalalignment: "center"
+        color: "#000000"
+        weight: "bold"
+      line: null
