@@ -1,4 +1,5 @@
 from itertools import chain, compress
+from typing import Optional
 
 from stim import Circuit, target_rec
 
@@ -64,7 +65,10 @@ def log_meas(
 
 
 def qec_round(
-    model: Model, meas_reset: bool = False, meas_comparison: bool = True
+    model: Model,
+    meas_reset: bool = False,
+    meas_comparison: bool = True,
+    stab_type_det: Optional[str] = None,
 ) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
@@ -150,14 +154,24 @@ def qec_round(
 
     # detectors ordered as in the measurements
     num_anc = len(anc_qubits)
+    detectors = (
+        model.layout.get_qubits(role="anc", stab_type=stab_type_det)
+        if stab_type_det
+        else anc_qubits
+    )
     if meas_comparison:
         det_targets = []
-        for ind in range(num_anc):
-            target_inds = [ind - (comp_round + 1) * num_anc, ind - num_anc]
-            targets = [target_rec(ind) for ind in target_inds]
-            det_targets.append(targets)
+        for ind, anc in enumerate(anc_qubits):
+            if anc in detectors:
+                target_inds = [ind - (comp_round + 1) * num_anc, ind - num_anc]
+                targets = [target_rec(ind) for ind in target_inds]
+                det_targets.append(targets)
     else:
-        det_targets = [[target_rec(ind - num_anc)] for ind in range(num_anc)]
+        det_targets = [
+            [target_rec(ind - num_anc)]
+            for ind, anc in enumerate(anc_qubits)
+            if anc in detectors
+        ]
 
     for targets in det_targets:
         circuit.append("DETECTOR", targets)

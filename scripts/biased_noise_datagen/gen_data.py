@@ -49,6 +49,7 @@ MEAS_RESET: bool = False  # No resets following measurements
 ERROR_PROBS: float = 1e-3
 BIAS_FACTOR: float = 1
 BIAS_PAULI: str = "X"
+GAUGE_DETECTORS: bool = True  # Add gauge detectors
 
 # Variable parameters
 data_qubits = layout.get_qubits(role="data")
@@ -90,6 +91,7 @@ for num_rounds in LIST_NUM_ROUNDS:
             data_init=data_init,
             rot_basis=ROT_BASIS,
             meas_reset=MEAS_RESET,
+            gauge_detectors=GAUGE_DETECTORS,
         )
 
         experiment.to_file(exp_folder / "circuit.stim")
@@ -116,7 +118,7 @@ for num_rounds in LIST_NUM_ROUNDS:
 
         error_model = experiment.detector_error_model(
             decompose_errors=True,
-            allow_gauge_detectors=True,
+            allow_gauge_detectors=GAUGE_DETECTORS,
             approximate_disjoint_errors=True,
         )
         error_model.to_file(exp_folder / "detector_error_model.dem")

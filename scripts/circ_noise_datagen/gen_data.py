@@ -48,6 +48,7 @@ ROT_BASIS: bool = False  # In the z-basis
 MEAS_RESET: bool = False  # No resets following measurements
 ASSIGN_ERRORS: bool = True  # Add assignement errors
 ASSIGN_PROB: float = 0.001  # Assignment error probability
+GAUGE_DETECTORS: bool = True  # Add gauge detectors
 
 # Variable parameters
 data_qubits = layout.get_qubits(role="data")
@@ -95,6 +96,7 @@ for prob in DEPOL_PROBS:
                 data_init=data_init,
                 rot_basis=ROT_BASIS,
                 meas_reset=MEAS_RESET,
+                gauge_detectors=GAUGE_DETECTORS,
             )
 
             experiment.to_file(exp_folder / "circuit.stim")
@@ -121,7 +123,7 @@ for prob in DEPOL_PROBS:
 
             error_model = experiment.detector_error_model(
                 decompose_errors=True,
-                allow_gauge_detectors=True,
+                allow_gauge_detectors=GAUGE_DETECTORS,
             )
             error_model.to_file(exp_folder / "detector_error_model.dem")
 
