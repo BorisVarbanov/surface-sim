@@ -13,7 +13,7 @@ def grouper(iterable: Iterable[str], block_size: int) -> Iterator[Tuple[str, ...
     "Collect data into non-overlapping fixed-length chunks or blocks"
     # grouper('ABCDEFG', 3) --> ABC DEF ValueError
     args = [iter(iterable)] * block_size
-    return zip(*args, strict=True)
+    return zip(*args)  # , strict=True
 
 
 def biased_prefactors(biased_pauli: str, biased_factor: float, num_qubits: int):
@@ -151,6 +151,16 @@ class CircuitNoiseModel(Model):
         for qubit, ind in zip(qubits, inds):
             prob = self.param("idle_error_prob", qubit)
             yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
+    def idle_two_qubit(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        if len(qubits) % 2 != 0:
+            raise ValueError("Expected and even number of qubits.")
+
+        inds = self.layout.get_inds(qubits)
+
+        for qubit_pair, ind_pair in zip(grouper(qubits, 2), grouper(inds, 2)):
+            prob = self.param("cz_error_prob", *qubit_pair)
+            yield CircuitInstruction("DEPOLARIZE2", ind_pair, [prob])
 
 
 class BiasedCircuitNoiseModel(Model):

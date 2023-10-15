@@ -19,7 +19,7 @@ def qec_round_with_log_meas(
     rot_basis: bool = False,
     meas_reset: bool = False,
     meas_comparison: bool = True,
-    log_s_comparison: bool = False,
+    log_s_comparison: bool = None,
 ) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
@@ -77,7 +77,7 @@ def qec_round_with_log_meas(
         circuit.append(instruction)
 
     # detectors ordered as in the measurements
-    if log_s_comparison:
+    if log_s_comparison is not None:
         if meas_comparison:
             comp_round = 1 if meas_reset else 2
         else:
@@ -85,7 +85,9 @@ def qec_round_with_log_meas(
         x_stab = model.layout.get_qubits(role="anc", stab_type="x_type")
         pairs = logical_s_get_pairs(model.layout, "anc")
         stab_comp = dict([a, [b]] if a in x_stab else [b, [a]] for a, b in pairs)
-        det_targets = get_det_targets(anc_qubits, comp_round, stab_comp)
+        det_targets = get_det_targets(
+            anc_qubits, comp_round, stab_comp, log_s_comparison
+        )
     else:
         if meas_comparison:
             comp_round = 1 if meas_reset else 2
@@ -131,16 +133,16 @@ def qec_round_with_log_meas(
     return circuit
 
 
-def get_det_targets(anc_qubits, comp_round, stab_comp={}):
+def get_det_targets(anc_qubits, comp_round, stab_comp={}, comp_stab=0):
     # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
 
     # detectors ordered as in the measurements
     num_anc = len(anc_qubits)
 
-    def get_target(anc, comp_round=0):
+    def get_target(anc, c_round=0):
         ind = anc_qubits.index(anc)
-        return ind - num_anc - comp_round * num_anc
+        return ind - num_anc - c_round * num_anc
 
     det_targets = []
     for anc in anc_qubits:
@@ -149,7 +151,7 @@ def get_det_targets(anc_qubits, comp_round, stab_comp={}):
             target_inds.append(get_target(anc, comp_round))
         if anc in stab_comp:
             for stab in stab_comp[anc]:
-                target_inds.append(get_target(stab))
+                target_inds.append(get_target(stab, comp_stab))
         targets = [target_rec(ind) for ind in target_inds]
         det_targets.append(targets)
 
@@ -268,7 +270,7 @@ def qec_round(
     model: Model,
     meas_reset: bool = False,
     meas_comparison: bool = True,
-    log_s_comparison: bool = False,
+    log_s_comparison: bool = None,
 ) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
@@ -325,7 +327,7 @@ def qec_round(
         circuit.append("TICK")
 
     # detectors ordered as in the measurements
-    if log_s_comparison:
+    if log_s_comparison is not None:
         if meas_comparison:
             comp_round = 1 if meas_reset else 2
         else:
@@ -333,7 +335,9 @@ def qec_round(
         x_stab = model.layout.get_qubits(role="anc", stab_type="x_type")
         pairs = logical_s_get_pairs(model.layout, "anc")
         stab_comp = dict([a, [b]] if a in x_stab else [b, [a]] for a, b in pairs)
-        det_targets = get_det_targets(anc_qubits, comp_round, stab_comp)
+        det_targets = get_det_targets(
+            anc_qubits, comp_round, stab_comp, log_s_comparison
+        )
     else:
         if meas_comparison:
             comp_round = 1 if meas_reset else 2
@@ -394,7 +398,7 @@ def init_qubits(model: Model, data_init: List[int], rot_basis: bool = False) -> 
     return circuit
 
 
-def log_s(model: Model, rot_basis: bool) -> Circuit:
+def log_s(model: Model) -> Circuit:
     """
     Returns stim circuit corresponding to a logical S gate
     of the given model using https://arxiv.org/abs/2302.07395.

@@ -60,24 +60,31 @@ def logical_s_experiment(
     if num_s_gates <= 0:
         raise ValueError("num_s_gates needs to be a positive integer")
 
+    assert num_s_gates % 2 == 0
+
     # Assume meas_reset = True for easier implementation of the detectors
     assert meas_reset
     # Rotation basis so that we see an effect of the logical S gate
     rot_basis = True
 
-    init_circ = init_qubits(model, data_init, rot_basis)
-    meas_circuit = log_meas(model, rot_basis, meas_reset)
+    init_circ = init_qubits(model, data_init=data_init, rot_basis=rot_basis)
+    meas_circuit = log_meas(model, rot_basis=rot_basis, meas_reset=meas_reset)
 
-    first_qec_circ = qec_round(model, meas_reset, meas_comparison=False)
-    qec_circ_after_s = qec_round(model, meas_reset, log_s_comparison=True)
+    first_qec_circ = qec_round(model, meas_reset=meas_reset, meas_comparison=False)
+    qec_circ_after_s_1 = qec_round(
+        model, meas_reset=meas_reset, log_s_comparison=0, meas_comparison=True
+    )
+    qec_circ_after_s_2 = qec_round(
+        model, meas_reset=meas_reset, log_s_comparison=1, meas_comparison=True
+    )
 
     log_s_gate = log_s(model)
 
-    experiment = (
-        init_circ
-        + first_qec_circ
-        + (log_s_gate + qec_circ_after_s) * num_s_gates
-        + meas_circuit
-    )
+    experiment = init_circ + first_qec_circ
+
+    for _ in range(int(num_s_gates / 2)):
+        experiment += log_s_gate + qec_circ_after_s_1 + log_s_gate + qec_circ_after_s_2
+
+    experiment += meas_circuit
 
     return experiment
