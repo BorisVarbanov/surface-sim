@@ -273,9 +273,11 @@ class DecoherenceModel(Model):
             The circuit instructions for an idling period on the given qubits.
         """
         for qubit in qubits:
-            relax_time = self._setup.relax_times[qubit]
-            deph_time = self._setup.deph_times[qubit]
+            relax_time = self.param("T1", qubit)
+            deph_time = self.param("T2", qubit)
+            # check that the parameters are physical
+            assert (relax_time > 0) and (deph_time > 0) and (2 * deph_time < relax_time)
 
-            error_probs = list(idle_error_probs(relax_time, deph_time, duration))
+            error_probs = idle_error_probs(relax_time, deph_time, duration)
 
             yield CircuitInstruction("PAULI_CHANNEL_1", [qubit], error_probs)

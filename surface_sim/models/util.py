@@ -69,7 +69,7 @@ def biased_prefactors(biased_pauli: str, biased_factor: float, num_qubits: int):
 
 def idle_error_probs(
     relax_time: float, deph_time: float, duration: float
-) -> Tuple[float, float, float]:
+) -> List[float, float, float]:
     """
     idle_error_probs Returns the probabilities of X, Y, and Z errors
     for a Pauli-twirled amplitude and phase damping channel.
@@ -89,7 +89,7 @@ def idle_error_probs(
 
     Returns
     -------
-    Tuple[float, float, float]
+    List[float, float, float]
         The probabilities of X, Y, and Z errors
     """
     # Check for invalid inputs
@@ -109,4 +109,4 @@ def idle_error_probs(
     x_prob = y_prob = 0.25 * relax_prob
     z_prob = 0.5 * deph_prob - 0.25 * relax_prob
 
-    return x_prob, y_prob, z_prob
+    return [x_prob, y_prob, z_prob]
