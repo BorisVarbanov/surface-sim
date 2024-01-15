@@ -1,5 +1,4 @@
-from itertools import product
-from typing import Iterable, Iterator, Sequence, Tuple
+from typing import Iterable, Iterator, Sequence, Tuple, Any
 
 import numpy as np
 from qec_util import Layout
@@ -7,61 +6,7 @@ from stim import CircuitInstruction
 
 from ..setup import Setup
 from .model import Model
-
-
-def grouper(iterable: Iterable[str], block_size: int) -> Iterator[Tuple[str, ...]]:
-    "Collect data into non-overlapping fixed-length chunks or blocks"
-    # grouper('ABCDEFG', 3) --> ABC DEF ValueError
-    args = [iter(iterable)] * block_size
-    return zip(*args, strict=True)
-
-
-def biased_prefactors(biased_pauli: str, biased_factor: float, num_qubits: int):
-    """
-    biased_prefactors Return a biased channel prefactors.
-
-    The bias of the channel is defined as any error operator that
-    applied the biased Pauli operator on any qubit.
-
-    Parameters
-    ----------
-    biased_pauli : str
-        The biased Pauli operator, represented as a string
-    biased_factor : float
-        The strength of the bias.
-
-        A bias factor of 1 corresponds to a standard depolarizing channel.
-        A bias factor of 0 leads to no probability of biased errors occurring.
-        A bias channel tending towards infinify (but inf not supported) leads to
-        only the biased errors occurring.
-    num_qubits : int
-        The number of qubits in the channel.
-
-    Returns
-    -------
-    np.ndarray
-        The array of prefactors
-    """
-    paulis = ["I", "X", "Y", "Z"]
-    # get all pauli combinations and remove identity operator
-    operators = list(product(paulis, repeat=num_qubits))[1:]
-    num_ops = len(operators)
-
-    biased_ops = [op for op in operators if biased_pauli in op]
-    num_biased = len(biased_ops)
-
-    nonbias_prefactor = 1 / (num_biased * (biased_factor - 1) + num_ops)
-    bias_prefactor = biased_factor * nonbias_prefactor
-
-    prefactors = []
-    for op in operators:
-        if biased_pauli in op:
-            prefactors.append(bias_prefactor)
-        else:
-            prefactors.append(nonbias_prefactor)
-    prefactors = np.array(prefactors)
-
-    return prefactors
+from .util import biased_prefactors, grouper, idle_error_probs
 
 
 class CircuitNoiseModel(Model):
@@ -234,3 +179,103 @@ class BiasedCircuitNoiseModel(Model):
             )
             prob = prob * prefactors
             yield CircuitInstruction("PAULI_CHANNEL_1", [ind], prob)
+
+
+class DecoherenceModel(Model):
+    """An coherence-limited noise model using T1 and T2"""
+
+    def __init__(self, setup: Setup, symmetric_noise: bool = False) -> Any:
+        self._sym_noise = symmetric_noise
+        return super().__init__(setup)
+
+    def generic_op(
+        self, name: str, qubits: Sequence[str]
+    ) -> Iterator[CircuitInstruction]:
+        """
+        generic_op Returns the circuit instructions for a generic operation (that is supported by Stim) on the given qubits.
+
+        Parameters
+        ----------
+        name : str
+            The name of the gate (as defined in Stim)
+        qubits : Sequence[str]
+            The qubits to apply the gate to.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for a generic gate on the given qubits.
+        """
+        if self._sym_noise:
+            duration = 0.5 * self._setup.gate_durations[name]
+
+            yield from self.idle(qubits, duration)
+            yield CircuitInstruction(name, qubits)
+            yield from self.idle(qubits, duration)
+        else:
+            duration = self._setup.gate_durations[name]
+
+            yield CircuitInstruction(name, qubits)
+            yield from self.idle(qubits, duration)
+
+    def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("X", qubits)
+
+    def y_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("Y", qubits)
+
+    def z_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("Z", qubits)
+
+    def s_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("S", qubits)
+
+    def hadamard(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("H", qubits)
+
+    def cnot(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("CNOT", qubits)
+
+    def cphase(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("CZ", qubits)
+
+    def swap(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("SWAP", qubits)
+
+    def iswap(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("ISWAP", qubits)
+
+    def cphase(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("CZ", qubits)
+
+    def measure(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("M", qubits)
+
+    def reset(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        yield from self.generic_op("R", qubits)
+
+    def idle(
+        self, qubits: Sequence[int], duration: float
+    ) -> Iterator[CircuitInstruction]:
+        """
+        idle Returns the circuit instructions for an idling period on the given qubits.
+
+        Parameters
+        ----------
+        qubits : Sequence[str]
+            The qubits to idle.
+        duration : float
+            The duration of the idling period.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for an idling period on the given qubits.
+        """
+        for qubit in qubits:
+            relax_time = self._setup.relax_times[qubit]
+            deph_time = self._setup.deph_times[qubit]
+
+            error_probs = list(idle_error_probs(relax_time, deph_time, duration))
+
+            yield CircuitInstruction("PAULI_CHANNEL_1", [qubit], error_probs)
