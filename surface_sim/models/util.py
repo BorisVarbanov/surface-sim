@@ -1,4 +1,4 @@
-from typing import Iterable, Iterator, Sequence, Tuple
+from typing import Iterable, Iterator, Sequence, Tuple, List
 
 from itertools import product
 
@@ -69,7 +69,7 @@ def biased_prefactors(biased_pauli: str, biased_factor: float, num_qubits: int):
 
 def idle_error_probs(
     relax_time: float, deph_time: float, duration: float
-) -> List[float, float, float]:
+) -> List[float]:
     """
     idle_error_probs Returns the probabilities of X, Y, and Z errors
     for a Pauli-twirled amplitude and phase damping channel.
