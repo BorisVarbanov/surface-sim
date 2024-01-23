@@ -1,7 +1,6 @@
 from typing import Iterable, Iterator, Sequence, Tuple, Any, Dict
 
 import numpy as np
-from qec_util import Layout
 from stim import CircuitInstruction
 
 from ..setup import Setup
@@ -10,8 +9,8 @@ from .util import biased_prefactors, grouper, idle_error_probs
 
 
 class CircuitNoiseModel(Model):
-    def __init__(self, setup: Setup, layout: Layout) -> None:
-        super().__init__(setup, layout)
+    def __init__(self, setup: Setup, qubit_inds: dict) -> None:
+        super().__init__(setup, qubit_inds)
 
     def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         inds = self.get_inds(qubits)
@@ -81,8 +80,8 @@ class CircuitNoiseModel(Model):
 
 
 class BiasedCircuitNoiseModel(Model):
-    def __init__(self, setup: Setup, layout: Layout) -> None:
-        super().__init__(setup, layout)
+    def __init__(self, setup: Setup, qubit_inds: dict) -> None:
+        super().__init__(setup, qubit_inds)
 
     def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         inds = self.get_inds(qubits)
@@ -184,9 +183,11 @@ class BiasedCircuitNoiseModel(Model):
 class DecoherenceNoiseModel(Model):
     """An coherence-limited noise model using T1 and T2"""
 
-    def __init__(self, setup: Setup, symmetric_noise: bool = False) -> Any:
+    def __init__(
+        self, setup: Setup, qubit_inds=dict, symmetric_noise: bool = False
+    ) -> Any:
         self._sym_noise = symmetric_noise
-        return super().__init__(setup)
+        return super().__init__(setup, qubit_inds)
 
     def generic_op(
         self, name: str, qubits: Sequence[str]
@@ -207,15 +208,15 @@ class DecoherenceNoiseModel(Model):
             The circuit instructions for a generic gate on the given qubits.
         """
         if self._sym_noise:
-            duration = 0.5 * self._setup.gate_durations[name]
+            duration = 0.5 * self.gate_duration(name)
 
             yield from self.idle(qubits, duration)
-            yield CircuitInstruction(name, qubits)
+            yield CircuitInstruction(name, targets=self.get_inds(qubits))
             yield from self.idle(qubits, duration)
         else:
-            duration = self._setup.gate_durations[name]
+            duration = self.gate_duration(name)
 
-            yield CircuitInstruction(name, qubits)
+            yield CircuitInstruction(name, targets=self.get_inds(qubits))
             yield from self.idle(qubits, duration)
 
     def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
@@ -246,7 +247,25 @@ class DecoherenceNoiseModel(Model):
         yield from self.generic_op("ISWAP", qubits)
 
     def measure(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
-        yield from self.generic_op("M", qubits)
+        name = "M"
+        if self._sym_noise:
+            duration = 0.5 * self.gate_duration(name)
+
+            yield from self.idle(qubits, duration)
+            for qubit in qubits:
+                if self.param("assign_error_flag", qubit):
+                    prob = self.param("assign_error_prob", qubit)
+                    yield CircuitInstruction(
+                        name, targets=self.get_inds([qubit]), gate_args=[prob]
+                    )
+                else:
+                    yield CircuitInstruction(name, gate_args=self.get_inds([qubit]))
+            yield from self.idle(qubits, duration)
+        else:
+            duration = self.gate_duration(name)
+
+            yield CircuitInstruction(name, targets=self.get_inds(qubits))
+            yield from self.idle(qubits, duration)
 
     def reset(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         yield from self.generic_op("R", qubits)
@@ -273,11 +292,109 @@ class DecoherenceNoiseModel(Model):
             relax_time = self.param("T1", qubit)
             deph_time = self.param("T2", qubit)
             # check that the parameters are physical
-            assert (relax_time > 0) and (deph_time > 0) and (2 * deph_time < relax_time)
+            assert (relax_time > 0) and (deph_time > 0) and (deph_time < 2 * relax_time)
 
             error_probs = idle_error_probs(relax_time, deph_time, duration)
 
-            yield CircuitInstruction("PAULI_CHANNEL_1", [qubit], error_probs)
+            yield CircuitInstruction(
+                "PAULI_CHANNEL_1", targets=self.get_inds([qubit]), gate_args=error_probs
+            )
+
+
+class ExperimentalNoiseModel(Model):
+    """
+    Noise models that uses the metrics characterized from
+    an experimental setup
+    """
+
+    def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        inds = self.get_inds(qubits)
+        yield CircuitInstruction("X", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
+    def z_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        inds = self.get_inds(qubits)
+
+        yield CircuitInstruction("Z", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
+    def hadamard(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        inds = self.get_inds(qubits)
+
+        yield CircuitInstruction("H", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("sq_error_prob", qubit)
+            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
+
+    def cphase(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        if len(qubits) % 2 != 0:
+            raise ValueError("Expected and even number of qubits.")
+
+        inds = self.get_inds(qubits)
+
+        yield CircuitInstruction("CZ", inds)
+
+        for qubit_pair, ind_pair in zip(grouper(qubits, 2), grouper(inds, 2)):
+            prob = self.param("cz_error_prob", *qubit_pair)
+            yield CircuitInstruction("DEPOLARIZE2", ind_pair, [prob])
+
+    def measure(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        inds = self.get_inds(qubits)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("meas_error_prob", qubit)
+            yield CircuitInstruction("X_ERROR", [ind], [prob])
+
+            if self.param("assign_error_flag", qubit):
+                prob = self.param("assign_error_prob", qubit)
+                yield CircuitInstruction("MZ", [ind], [prob])
+            else:
+                yield CircuitInstruction("MZ", [ind])
+
+    def reset(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
+        inds = self.get_inds(qubits)
+        yield CircuitInstruction("R", inds)
+
+        for qubit, ind in zip(qubits, inds):
+            prob = self.param("reset_error_prob", qubit)
+            yield CircuitInstruction("X_ERROR", [ind], [prob])
+
+    def idle(
+        self, qubits: Sequence[int], duration: float
+    ) -> Iterator[CircuitInstruction]:
+        """
+        idle Returns the circuit instructions for an idling period on the given qubits.
+
+        Parameters
+        ----------
+        qubits : Sequence[str]
+            The qubits to idle.
+        duration : float
+            The duration of the idling period.
+
+        Yields
+        ------
+        Iterator[CircuitInstruction]
+            The circuit instructions for an idling period on the given qubits.
+        """
+        for qubit in qubits:
+            relax_time = self.param("T1", qubit)
+            deph_time = self.param("T2", qubit)
+            # check that the parameters are physical
+            assert (relax_time > 0) and (deph_time > 0) and (deph_time < 2 * relax_time)
+
+            error_probs = idle_error_probs(relax_time, deph_time, duration)
+
+            yield CircuitInstruction(
+                "PAULI_CHANNEL_1", targets=self.get_inds([qubit]), gate_args=error_probs
+            )
 
 
 class NoiselessModel(Model):

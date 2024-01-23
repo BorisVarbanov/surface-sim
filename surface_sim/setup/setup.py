@@ -14,8 +14,8 @@ class Setup:
         self._var_params = dict()
 
         _setup = deepcopy(setup)
-        self.name = _setup.pop("name")
-        self.description = setup.pop("description")
+        self.name = _setup.pop("name", None)
+        self.description = setup.pop("description", None)
         self.gate_durations = setup.pop("gate_durations", {})
         self._load_setup(_setup)
 

@@ -18,6 +18,9 @@ class Model(object):
     def qubits(self) -> List[str]:
         return list(self._qubit_inds.keys())
 
+    def gate_duration(self, name: str) -> float:
+        return self._setup.gate_durations[name]
+
     def get_inds(self, qubits: Sequence[str]) -> List[int]:
         return [self._qubit_inds[q] for q in qubits]
 
