@@ -184,7 +184,7 @@ class DecoherenceNoiseModel(Model):
     """An coherence-limited noise model using T1 and T2"""
 
     def __init__(
-        self, setup: Setup, qubit_inds=dict, symmetric_noise: bool = False
+        self, setup: Setup, qubit_inds=dict, symmetric_noise: bool = True
     ) -> Any:
         self._sym_noise = symmetric_noise
         return super().__init__(setup, qubit_inds)
