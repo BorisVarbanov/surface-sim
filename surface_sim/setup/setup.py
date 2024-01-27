@@ -16,7 +16,7 @@ class Setup:
         _setup = deepcopy(setup)
         self.name = _setup.pop("name", None)
         self.description = setup.pop("description", None)
-        self.gate_durations = setup.pop("gate_durations", {})
+        self._gate_durations = setup.pop("gate_durations", {})
         self._load_setup(_setup)
 
     def _load_setup(self, setup: Dict[str, Any]) -> None:
@@ -72,6 +72,7 @@ class Setup:
 
         setup["name"] = self.name
         setup["description"] = self.description
+        setup["gate_durations"] = self._gate_durations
 
         qubit_params = []
         if self._global_params:
@@ -137,3 +138,9 @@ class Setup:
             return self._var_params[val]
         except KeyError:
             return val
+
+    def gate_duration(self, name: str) -> float:
+        try:
+            return self._gate_durations[name]
+        except KeyError:
+            raise ValueError(f"No gate duration specified for '{name}'")

@@ -1,7 +1,11 @@
 import numpy as np
 from stim import Circuit
 
-from ..circuits.xzzx_code_google import init_qubits, qec_round_with_log_meas, qec_round
+from .blocks.surface_code_xzzx_google import (
+    init_qubits,
+    qec_round_with_log_meas,
+    qec_round,
+)
 from ..models import Model
 
 

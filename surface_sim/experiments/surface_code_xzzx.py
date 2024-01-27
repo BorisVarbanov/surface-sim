@@ -1,7 +1,7 @@
 import numpy as np
 from stim import Circuit
 
-from ..circuits.css_code import init_qubits, log_meas, qec_round
+from .blocks.surface_code_xzzx import init_qubits, log_meas, qec_round
 from ..models import Model
 
 

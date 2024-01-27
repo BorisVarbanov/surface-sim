@@ -6,7 +6,7 @@ from stim import Circuit
 from xarray import DataArray, Dataset
 
 
-def sample_experiment(
+def sample_memory_experiment(
     layout: Layout,
     experiment: Circuit,
     num_shots: int,
