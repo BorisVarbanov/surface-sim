@@ -2,11 +2,14 @@ from itertools import chain, compress
 
 from stim import Circuit, target_rec
 
-from ..models import Model
+from qec_util import Layout
+
+from ...models import Model
 
 
 def log_meas(
     model: Model,
+    layout: Layout,
     rot_basis: bool = False,
     meas_reset: bool = False,
 ) -> Circuit:
@@ -16,8 +19,8 @@ def log_meas(
     By default, the logical measurement is in the Z basis.
     If rot_basis, the logical measurement is in the X basis.
     """
-    anc_qubits = model.layout.get_qubits(role="anc")
-    data_qubits = model.layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
 
     # With reset defect[n] = m[n] XOR m[n-1]
     # Wihtout reset defect[n] = m[n] XOR m[n-2]
@@ -44,11 +47,11 @@ def log_meas(
 
     num_data, num_anc = len(data_qubits), len(anc_qubits)
     stab_type = "x_type" if rot_basis else "z_type"
-    stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
+    stab_qubits = layout.get_qubits(role="anc", stab_type=stab_type)
 
     for anc_qubit in stab_qubits:
-        neighbors = model.layout.get_neighbors(anc_qubit)
-        neighbor_inds = model.layout.get_inds(neighbors)
+        neighbors = layout.get_neighbors(anc_qubit)
+        neighbor_inds = layout.get_inds(neighbors)
         targets = [target_rec(ind - num_data) for ind in neighbor_inds]
 
         anc_ind = anc_qubits.index(anc_qubit)
@@ -64,7 +67,10 @@ def log_meas(
 
 
 def qec_round(
-    model: Model, meas_reset: bool = False, meas_comparison: bool = True
+    model: Model,
+    layout: Layout,
+    meas_reset: bool = False,
+    meas_comparison: bool = True,
 ) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
@@ -79,8 +85,8 @@ def qec_round(
         If specified, only adds detectors to the ancillas for the
         specific stabilizator type.
     """
-    data_qubits = model.layout.get_qubits(role="data")
-    anc_qubits = model.layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
 
     qubits = set(data_qubits + anc_qubits)
     # With reset defect[n] = m[n] XOR m[n-1]
@@ -88,11 +94,11 @@ def qec_round(
     comp_round = 1 if meas_reset else 2
 
     circuit = Circuit()
-    int_order = model.layout.interaction_order
+    int_order = layout.interaction_order
     stab_types = list(int_order.keys())
 
     for ind, stab_type in enumerate(stab_types):
-        stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
+        stab_qubits = layout.get_qubits(role="anc", stab_type=stab_type)
         rot_qubits = set(stab_qubits)
         if stab_type == "x_type":
             rot_qubits.update(data_qubits)
@@ -107,7 +113,7 @@ def qec_round(
             circuit.append("TICK")
 
         for ord_dir in int_order[stab_type]:
-            int_pairs = model.layout.get_neighbors(
+            int_pairs = layout.get_neighbors(
                 stab_qubits, direction=ord_dir, as_pairs=True
             )
             int_qubits = list(chain.from_iterable(int_pairs))
@@ -165,15 +171,17 @@ def qec_round(
     return circuit
 
 
-def init_qubits(model: Model, data_init: int, rot_basis: bool = False) -> Circuit:
+def init_qubits(
+    model: Model, layout: Layout, data_init: int, rot_basis: bool = False
+) -> Circuit:
     """
     Returns stim circuit corresponding to a logical initialization
     of the given model.
     By default, the logical measurement is in the Z basis.
     If rot_basis, the logical measurement is in the X basis.
     """
-    anc_qubits = model.layout.get_qubits(role="anc")
-    data_qubits = model.layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
 
     qubits = set(data_qubits + anc_qubits)
 
@@ -205,13 +213,13 @@ def init_qubits(model: Model, data_init: int, rot_basis: bool = False) -> Circui
     return circuit
 
 
-def log_x(model: Model) -> Circuit:
+def log_x(model: Model, layout: Layout) -> Circuit:
     """
     Returns stim circuit corresponding to a logical X gate
     of the given model.
     """
-    anc_qubits = model.layout.get_qubits(role="anc")
-    data_qubits = model.layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
 
     circuit = Circuit()
 
@@ -225,13 +233,13 @@ def log_x(model: Model) -> Circuit:
     return circuit
 
 
-def log_z(model: Model) -> Circuit:
+def log_z(model: Model, layout: Layout) -> Circuit:
     """
     Returns stim circuit corresponding to a logical Z gate
     of the given model.
     """
-    anc_qubits = model.layout.get_qubits(role="anc")
-    data_qubits = model.layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
 
     circuit = Circuit()
 

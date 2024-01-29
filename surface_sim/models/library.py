@@ -222,29 +222,14 @@ class DecoherenceNoiseModel(Model):
     def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         yield from self.generic_op("X", qubits)
 
-    def y_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
-        yield from self.generic_op("Y", qubits)
-
     def z_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         yield from self.generic_op("Z", qubits)
-
-    def s_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
-        yield from self.generic_op("S", qubits)
 
     def hadamard(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         yield from self.generic_op("H", qubits)
 
-    def cnot(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
-        yield from self.generic_op("CNOT", qubits)
-
     def cphase(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         yield from self.generic_op("CZ", qubits)
-
-    def swap(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
-        yield from self.generic_op("SWAP", qubits)
-
-    def iswap(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
-        yield from self.generic_op("ISWAP", qubits)
 
     def measure(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         name = "M"
@@ -310,15 +295,6 @@ class ExperimentalNoiseModel(Model):
     def x_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
         inds = self.get_inds(qubits)
         yield CircuitInstruction("X", inds)
-
-        for qubit, ind in zip(qubits, inds):
-            prob = self.param("sq_error_prob", qubit)
-            yield CircuitInstruction("DEPOLARIZE1", [ind], [prob])
-
-    def z_gate(self, qubits: Sequence[str]) -> Iterator[CircuitInstruction]:
-        inds = self.get_inds(qubits)
-
-        yield CircuitInstruction("Z", inds)
 
         for qubit, ind in zip(qubits, inds):
             prob = self.param("sq_error_prob", qubit)
@@ -408,45 +384,20 @@ class NoiselessModel(Model):
     ) -> Iterator[CircuitInstruction]:
         yield CircuitInstruction("X", self.get_inds(qubits))
 
-    def y_gate(
-        self, qubits: Sequence[str], *args, **kargs
-    ) -> Iterator[CircuitInstruction]:
-        yield CircuitInstruction("Y", self.get_inds(qubits))
-
     def z_gate(
         self, qubits: Sequence[str], *args, **kargs
     ) -> Iterator[CircuitInstruction]:
         yield CircuitInstruction("Z", self.get_inds(qubits))
-
-    def s_gate(
-        self, qubits: Sequence[str], *args, **kargs
-    ) -> Iterator[CircuitInstruction]:
-        yield CircuitInstruction("S", self.get_inds(qubits))
 
     def hadamard(
         self, qubits: Sequence[str], *args, **kargs
     ) -> Iterator[CircuitInstruction]:
         yield CircuitInstruction("H", self.get_inds(qubits))
 
-    def cnot(
-        self, qubits: Sequence[str], *args, **kargs
-    ) -> Iterator[CircuitInstruction]:
-        yield CircuitInstruction("CNOT", self.get_inds(qubits))
-
     def cphase(
         self, qubits: Sequence[str], *args, **kargs
     ) -> Iterator[CircuitInstruction]:
         yield CircuitInstruction("CZ", self.get_inds(qubits))
-
-    def swap(
-        self, qubits: Sequence[str], *args, **kargs
-    ) -> Iterator[CircuitInstruction]:
-        yield CircuitInstruction("SWAP", self.get_inds(qubits))
-
-    def iswap(
-        self, qubits: Sequence[str], *args, **kargs
-    ) -> Iterator[CircuitInstruction]:
-        yield CircuitInstruction("ISWAP", self.get_inds(qubits))
 
     def measure(
         self, qubits: Sequence[str], *args, **kargs

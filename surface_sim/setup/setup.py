@@ -15,8 +15,8 @@ class Setup:
 
         _setup = deepcopy(setup)
         self.name = _setup.pop("name", None)
-        self.description = setup.pop("description", None)
-        self._gate_durations = setup.pop("gate_durations", {})
+        self.description = _setup.pop("description", None)
+        self._gate_durations = _setup.pop("gate_durations", {})
         self._load_setup(_setup)
 
     def _load_setup(self, setup: Dict[str, Any]) -> None:
