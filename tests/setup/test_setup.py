@@ -31,8 +31,8 @@ def test_free_params():
     setup = Setup(SETUP)
     assert set(setup.free_params) == set(["free", "free2"])
 
-    setup.set_param("free", 0.1)
-    assert setup.param("free", "D1") == 0.1
+    setup.set_var_param("free", 0.12)
+    assert setup.param("sq_error_prob", "D1") == 0.12
     return
 
 

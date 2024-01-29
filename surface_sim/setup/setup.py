@@ -101,7 +101,7 @@ class Setup:
         try:
             return self._var_params[var_param]
         except KeyError:
-            raise ValueError(f"Variable param {var_param} not in setup.var_params.")
+            raise ValueError(f"Variable param {var_param} not in setup.free_params.")
 
     def set_var_param(self, var_param: str, val: float) -> None:
         try:
