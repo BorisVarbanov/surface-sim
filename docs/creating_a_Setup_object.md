@@ -29,12 +29,16 @@ The parameters are classified into three categories:
 - **global parameter**: float value that is defined for all qubits or all two-qubit gates
 - **free parameter**: string name that can be set up and modified for an specific qubit or all qubits. These parameters can be setup using the `Setup.set_var_param` function. 
 
-Examples:
+Examples that represent the same noise:
 ```
 # local parameters
-setup = [
+setup_input = [
     {
         "qubit": "D1", 
+        "sq_error_prob": 0.001 
+    },
+    {
+        "qubit": "D2", 
         "sq_error_prob": 0.001 
     },
     {
@@ -46,7 +50,7 @@ setup = [
 
 ```
 # global parameters
-setup = [
+setup_input = [
     {
         "sq_error_prob": 0.001 
         "cz_error_prob": 0.01 
@@ -56,7 +60,7 @@ setup = [
 
 ```
 # free parameters
-setup = [
+setup_input = [
     {
         # global free parameter
         "sq_error_prob": "param1"
@@ -67,6 +71,9 @@ setup = [
         "cz_error_prob": "param2" 
     },
 ]
+# set the free parameters once the Setup object has been created:
+# setup.set_var_param("param1", 0.001)
+# setup.set_var_param("param2", 0.01)
 ```
 
 ## Loading `Setup` from YAML file
