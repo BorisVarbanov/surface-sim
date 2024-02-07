@@ -84,7 +84,7 @@ from surface_sim import Setup
 setup = Setup.from_yaml("path/to/yaml/file.yaml")
 ```
 
-Examples of YAML file can be found in `docs`: `circ_level_noise.yaml` and `biased_circ_level_noise`.
+Examples of the YAML file can be found in `docs/yaml_examples`.
 
 ## Creating `Setup` from `dict`
 

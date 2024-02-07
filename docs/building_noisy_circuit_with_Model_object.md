@@ -10,13 +10,12 @@ for instr in model.x_gate(["D1", "D2"]):
     circuit.append(instr)
 ```
 
-The building blocks in `surface_sim.experiments.blocks` use a qubit layout, i.e. `qec_util.Layout`, which simplifies the qubit selection for gate scheduling. As an example, `qec_util.Layout.get_qubits(role="anc")` selects all ancilla qubits from the layout. 
+The building blocks in `surface_sim.experiments.blocks` use a qubit layout, i.e. `qec_util.Layout`, which simplifies the qubit selection for gate scheduling. As an example, `qec_util.Layout.get_qubits(role="anc")` selects all ancilla qubits from the layout. In `docs/yaml_examples`, there is a YAML file that stores the Surface-17 layout and which can be loaded using `qec_util.Layout.from_yaml()`.
 
 
 # Example: QEC cycle for the standard pipelined surface code
 
 Below, the code for generating the QEC cycle for the standard pipelined surface code is explained. 
-
 
 Firstly, we define some useful variables for applying gates to specific types of qubits, i.e. data qubits and ancilla qubits. When not reseting the ancillas after the measurement in the QEC cycle, the definition of the defects as a function of the ancilla outcomes is different than when using reset. 
 ```

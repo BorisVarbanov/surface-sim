@@ -18,7 +18,7 @@ def sample_memory_experiment(
 
     num_anc = len(anc_qubits)
 
-    shots = list(range(1, num_shots + 1))
+    shots = list(range(num_shots))
     qec_rounds = list(range(1, num_rounds + 1))
 
     # generate noisy data
