@@ -7,13 +7,16 @@ https://doi.org/10.48550/arXiv.2207.06431
 from itertools import chain, compress
 from typing import List
 
+from qec_util import Layout
+
 from stim import Circuit, target_rec
 
-from ..models import Model
+from ...models import Model
 
 
 def qec_round_with_log_meas(
     model: Model,
+    layout: Layout,
     rot_basis: bool = False,
     meas_reset: bool = False,
     meas_comparison: bool = True,
@@ -35,8 +38,8 @@ def qec_round_with_log_meas(
         If specified, only adds detectors to the ancillas for the
         specific stabilizator type.
     """
-    anc_qubits = model.layout.get_qubits(role="anc")
-    data_qubits = model.layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
     qubits = set(data_qubits + anc_qubits)
     num_data, num_anc = len(data_qubits), len(anc_qubits)
 
@@ -45,15 +48,15 @@ def qec_round_with_log_meas(
     comp_rounds = 1 if meas_reset else 2
 
     # a-h
-    circuit = coherent_qec_part(model=model)
+    circuit = coherent_qec_part(model=model, layout=layout)
 
     # i (for logical measurement)
     stab_type = "x_type" if rot_basis else "z_type"
-    stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
+    stab_qubits = layout.get_qubits(role="anc", stab_type=stab_type)
 
     rot_qubits = set(anc_qubits)
     for direction in ("north_west", "south_east"):
-        neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
+        neighbors = layout.get_neighbors(stab_qubits, direction=direction)
         rot_qubits.update(neighbors)
 
     for instruction in model.hadamard(rot_qubits):
@@ -87,8 +90,8 @@ def qec_round_with_log_meas(
         circuit.append(instruction)
 
     for anc_qubit in stab_qubits:
-        neighbors = model.layout.get_neighbors(anc_qubit)
-        neighbor_inds = model.layout.get_inds(neighbors)
+        neighbors = layout.get_neighbors(anc_qubit)
+        neighbor_inds = layout.get_inds(neighbors)
         targets = [target_rec(ind - num_data) for ind in neighbor_inds]
 
         anc_ind = anc_qubits.index(anc_qubit)
@@ -103,14 +106,14 @@ def qec_round_with_log_meas(
     return circuit
 
 
-def coherent_qec_part(model: Model) -> Circuit:
+def coherent_qec_part(model: Model, layout: Layout) -> Circuit:
     """
     Returns stim circuit corresponding to the steps "a" to "h" from the QEC cycle
     described in Google's paper for the given model.
     """
-    data_qubits = model.layout.get_qubits(role="data")
-    x_anc = model.layout.get_qubits(role="anc", stab_type="x_type")
-    z_anc = model.layout.get_qubits(role="anc", stab_type="z_type")
+    data_qubits = layout.get_qubits(role="data")
+    x_anc = layout.get_qubits(role="anc", stab_type="x_type")
+    z_anc = layout.get_qubits(role="anc", stab_type="z_type")
     anc_qubits = x_anc + z_anc
     qubits = set(data_qubits + anc_qubits)
 
@@ -127,9 +130,7 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # b
-    int_pairs = model.layout.get_neighbors(
-        anc_qubits, direction="north_east", as_pairs=True
-    )
+    int_pairs = layout.get_neighbors(anc_qubits, direction="north_east", as_pairs=True)
     int_qubits = list(chain.from_iterable(int_pairs))
 
     for instruction in model.cphase(int_qubits):
@@ -151,8 +152,8 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # d
-    x_pairs = model.layout.get_neighbors(x_anc, direction="north_west", as_pairs=True)
-    z_pairs = model.layout.get_neighbors(z_anc, direction="south_east", as_pairs=True)
+    x_pairs = layout.get_neighbors(x_anc, direction="north_west", as_pairs=True)
+    z_pairs = layout.get_neighbors(z_anc, direction="south_east", as_pairs=True)
     int_pairs = chain(x_pairs, z_pairs)
     int_qubits = list(chain.from_iterable(int_pairs))
 
@@ -171,8 +172,8 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # f
-    x_pairs = model.layout.get_neighbors(x_anc, direction="south_east", as_pairs=True)
-    z_pairs = model.layout.get_neighbors(z_anc, direction="north_west", as_pairs=True)
+    x_pairs = layout.get_neighbors(x_anc, direction="south_east", as_pairs=True)
+    z_pairs = layout.get_neighbors(z_anc, direction="north_west", as_pairs=True)
     int_pairs = chain(x_pairs, z_pairs)
     int_qubits = list(chain.from_iterable(int_pairs))
 
@@ -195,9 +196,7 @@ def coherent_qec_part(model: Model) -> Circuit:
     circuit.append("TICK")
 
     # h
-    int_pairs = model.layout.get_neighbors(
-        anc_qubits, direction="south_west", as_pairs=True
-    )
+    int_pairs = layout.get_neighbors(anc_qubits, direction="south_west", as_pairs=True)
     int_qubits = list(chain.from_iterable(int_pairs))
 
     for instruction in model.cphase(int_qubits):
@@ -212,7 +211,7 @@ def coherent_qec_part(model: Model) -> Circuit:
 
 
 def qec_round(
-    model: Model, meas_reset: bool = False, meas_comparison: bool = True
+    model: Model, layout: Layout, meas_reset: bool = False, meas_comparison: bool = True
 ) -> Circuit:
     """
     Returns stim circuit corresponding to a QEC cycle
@@ -227,8 +226,8 @@ def qec_round(
         If specified, only adds detectors to the ancillas for the
         specific stabilizator type.
     """
-    data_qubits = model.layout.get_qubits(role="data")
-    anc_qubits = model.layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
 
     qubits = set(data_qubits + anc_qubits)
 
@@ -237,7 +236,7 @@ def qec_round(
     comp_round = 1 if meas_reset else 2
 
     # a-h
-    circuit = coherent_qec_part(model=model)
+    circuit = coherent_qec_part(model=model, layout=layout)
 
     # i
     rot_qubits = set(anc_qubits)
@@ -282,15 +281,17 @@ def qec_round(
     return circuit
 
 
-def init_qubits(model: Model, data_init: List[int], rot_basis: bool = False) -> Circuit:
+def init_qubits(
+    model: Model, layout: Layout, data_init: List[int], rot_basis: bool = False
+) -> Circuit:
     """
     Returns stim circuit corresponding to a logical initialization
     of the given model.
     By default, the logical measurement is in the Z basis.
     If rot_basis, the logical measurement is in the X basis.
     """
-    anc_qubits = model.layout.get_qubits(role="anc")
-    data_qubits = model.layout.get_qubits(role="data")
+    anc_qubits = layout.get_qubits(role="anc")
+    data_qubits = layout.get_qubits(role="data")
 
     qubits = set(data_qubits + anc_qubits)
 
@@ -310,11 +311,11 @@ def init_qubits(model: Model, data_init: List[int], rot_basis: bool = False) -> 
     circuit.append("TICK")
 
     stab_type = "x_type" if rot_basis else "z_type"
-    stab_qubits = model.layout.get_qubits(role="anc", stab_type=stab_type)
+    stab_qubits = layout.get_qubits(role="anc", stab_type=stab_type)
 
     rot_qubits = set()
     for direction in ("north_west", "south_east"):
-        neighbors = model.layout.get_neighbors(stab_qubits, direction=direction)
+        neighbors = layout.get_neighbors(stab_qubits, direction=direction)
         rot_qubits.update(neighbors)
 
     for instruction in model.hadamard(rot_qubits):
